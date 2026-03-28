@@ -12,20 +12,34 @@ type UserHandler struct {
 }
 
 func NewUserHandler(s *service.UserService) *UserHandler {
-	return &UserHandler{s}
+	return &UserHandler{service: s}
 }
 
 type UserResponse struct {
-	User string `json:"user"`
+	Data string `json:"data"`
 }
 
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	user, err := h.service.GetUser(r.Context())
 	if err != nil {
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	resp := UserResponse{
+		Data: user,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(UserResponse{User: user})
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

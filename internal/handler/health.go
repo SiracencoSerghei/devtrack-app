@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"net/http"
 	"encoding/json"
+	"net/http"
 )
 
 type HealthResponse struct {
@@ -10,9 +10,19 @@ type HealthResponse struct {
 }
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
-	response := HealthResponse{
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	resp := HealthResponse{
 		Status: "ok",
 	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

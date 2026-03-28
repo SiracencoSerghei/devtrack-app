@@ -12,10 +12,14 @@ func NewUserService() *UserService {
 }
 
 func (s *UserService) GetUser(ctx context.Context) (string, error) {
+
 	select {
+
 	case <-time.After(2 * time.Second):
 		return "user data", nil
+
 	case <-ctx.Done():
 		return "", ctx.Err()
+
 	}
 }
