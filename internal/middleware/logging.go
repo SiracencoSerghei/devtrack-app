@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"log"
+	"net"
 	"net/http"
 	"time"
 )
@@ -29,12 +30,16 @@ func Logging(next http.Handler) http.Handler {
 
 		next.ServeHTTP(rec, r)
 
+		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+
 		log.Printf(
-			"%s %s %d %s",
+			"%s %s %d %s ip=%s ua=%s",
 			r.Method,
 			r.URL.Path,
 			rec.status,
 			time.Since(start),
+			ip,
+			r.UserAgent(),
 		)
 	})
 }

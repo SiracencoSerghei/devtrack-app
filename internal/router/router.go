@@ -7,16 +7,22 @@ import (
 	"github.com/SiracencoSerghei/devtrack-app/internal/middleware"
 )
 
-func New(userHandler *handler.UserHandler) http.Handler {
+func New() *http.ServeMux {
+	return http.NewServeMux()
+}
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/health", handler.HealthHandler)
+func RegisterHealthRoutes(mux *http.ServeMux, h *handler.HealthHandler) {
 
 	mux.Handle(
-		"/user",
-		middleware.Logging(http.HandlerFunc(userHandler.GetUser)),
+		"/health",
+		middleware.Logging(http.HandlerFunc(h.Health)),
 	)
+}
 
-	return mux
+func RegisterUserRoutes(mux *http.ServeMux, h *handler.UserHandler) {
+
+	mux.Handle(
+		"/users",
+		middleware.Logging(http.HandlerFunc(h.GetUsers)),
+	)
 }

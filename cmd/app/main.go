@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/SiracencoSerghei/devtrack-app/internal/handler"
@@ -16,30 +17,33 @@ import (
 func main() {
 
 	userService := service.NewUserService()
-	userHandler := handler.NewUserHandler(userService)
 
-	r := router.New(userHandler)
+	userHandler := handler.NewUserHandler(userService)
+	healthHandler := handler.NewHealthHandler()
+
+	r := router.New()
+
+	router.RegisterHealthRoutes(r, healthHandler)
+	router.RegisterUserRoutes(r, userHandler)
 
 	server := httpserver.New(":8080", r)
 
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	errChan := make(chan error, 1)
 
 	go func() {
-		if err := server.Start(); err != nil {
-			errChan <- err
-		}
+		errChan <- server.Start()
 	}()
 
 	select {
 
-	case <-stop:
-		log.Println("Shutdown signal received")
-
 	case err := <-errChan:
-		log.Fatalf("Server crashed: %v", err)
+		log.Fatalf("server crashed: %v", err)
+
+	case <-stop:
+		log.Println("shutdown signal received")
 
 	}
 
@@ -47,8 +51,8 @@ func main() {
 	defer cancel()
 
 	if err := server.Stop(ctx); err != nil {
-		log.Printf("Shutdown error: %v", err)
+		log.Printf("shutdown error: %v", err)
 	}
 
-	log.Println("Server stopped")
+	log.Println("server stopped")
 }

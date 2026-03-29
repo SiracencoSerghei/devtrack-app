@@ -19,17 +19,16 @@ type UserResponse struct {
 	Data string `json:"data"`
 }
 
-func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
 	user, err := h.service.GetUser(r.Context())
 	if err != nil {
-
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -40,6 +39,6 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		WriteError(w, http.StatusInternalServerError, "encoding error")
 	}
 }
