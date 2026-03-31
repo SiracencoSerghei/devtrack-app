@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"github.com/SiracencoSerghei/devtrack-app/internal/httpx"
 )
 
 type HealthHandler struct{}
@@ -18,7 +19,7 @@ type HealthResponse struct {
 func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
-		WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
+		httpx.WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
@@ -29,6 +30,6 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		WriteError(w, http.StatusInternalServerError, "encoding error")
+		httpx.WriteError(w, http.StatusInternalServerError, "encoding error")
 	}
 }

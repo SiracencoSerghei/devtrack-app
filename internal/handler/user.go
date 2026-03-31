@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/SiracencoSerghei/devtrack-app/internal/service"
+	"github.com/SiracencoSerghei/devtrack-app/internal/httpx"
 )
 
 type UserHandler struct {
@@ -22,13 +23,13 @@ type UserResponse struct {
 func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
-		WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
+		httpx.WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
 	user, err := h.service.GetUser(r.Context())
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		httpx.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -39,6 +40,6 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		WriteError(w, http.StatusInternalServerError, "encoding error")
+		httpx.WriteError(w, http.StatusInternalServerError, "encoding error")
 	}
 }

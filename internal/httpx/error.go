@@ -1,4 +1,4 @@
-package handler
+package httpx
 
 import (
 	"encoding/json"
@@ -10,13 +10,9 @@ type ErrorResponse struct {
 }
 
 func WriteError(w http.ResponseWriter, status int, message string) {
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-
-	resp := ErrorResponse{
+	_ = json.NewEncoder(w).Encode(ErrorResponse{
 		Error: message,
-	}
-
-	json.NewEncoder(w).Encode(resp)
+	})
 }
