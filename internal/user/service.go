@@ -3,13 +3,17 @@ package user
 import (
 	"context"
 	"errors"
+	"regexp"
+	"strings"
 )
 
+var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$`)
+
 type Service struct {
-	repo *Repository
+	repo UserRepository
 }
 
-func NewService(repo *Repository) *Service {
+func NewService(repo UserRepository) *Service {
 	return &Service{repo: repo}
 }
 
@@ -20,25 +24,18 @@ func (s *Service) Create(ctx context.Context, name, email string) (User, error) 
 	default:
 	}
 
+	name = strings.TrimSpace(name)
+	email = strings.TrimSpace(strings.ToLower(email))
+
 	if name == "" || email == "" {
 		return User{}, errors.New("name and email are required")
 	}
 
-	if s.repo.ExistsByEmail(email) {
-		return User{}, errors.New("email already exists")
+	if !emailRegex.MatchString(email) {
+		return User{}, errors.New("invalid email format")
 	}
 
-	user := User{
-		ID:    s.repo.NextID(),
-		Name:  name,
-		Email: email,
-	}
-
-	if err := s.repo.Save(user); err != nil {
-		return User{}, err
-	}
-
-	return user, nil
+	return s.repo.Create(User{Name: name, Email: email})
 }
 
 func (s *Service) GetAll(ctx context.Context) ([]User, error) {
@@ -47,6 +44,5 @@ func (s *Service) GetAll(ctx context.Context) ([]User, error) {
 		return nil, ctx.Err()
 	default:
 	}
-
 	return s.repo.GetAll(), nil
 }

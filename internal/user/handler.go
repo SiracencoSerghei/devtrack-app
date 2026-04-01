@@ -20,9 +20,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
+	defer r.Body.Close()
 
 	var req CreateUserRequest
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "invalid body")
 		return
@@ -34,10 +34,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	json.NewEncoder(w).Encode(user)
+	httpx.WriteJSON(w, http.StatusCreated, user)
 }
 
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +49,5 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	httpx.WriteJSON(w, http.StatusOK, users)
 }

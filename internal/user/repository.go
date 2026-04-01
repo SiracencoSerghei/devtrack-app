@@ -1,28 +1,48 @@
 package user
 
 import (
-	"fmt"
-	"sync"
 	"errors"
+	"fmt"
+	"sort"
+	"strconv"
+	"sync"
 )
 
+// UserRepository interface for testable service
+type UserRepository interface {
+	Create(u User) (User, error)
+	GetAll() []User
+}
+
+// InMemory repo only for tests/dev
 type Repository struct {
-	mu    sync.RWMutex
-	users map[string]User
+	mu     sync.RWMutex
+	users  map[string]User
+	nextID int
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		users: make(map[string]User),
+		users:  make(map[string]User),
+		nextID: 1,
 	}
 }
 
-func (r *Repository) Save(user User) error {
+func (r *Repository) Create(u User) (User, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.users[user.ID] = user
-	return nil
+	for _, existing := range r.users {
+		if existing.Email == u.Email {
+			return User{}, errors.New("email already exists")
+		}
+	}
+
+	u.ID = fmt.Sprintf("%d", r.nextID)
+	r.nextID++
+	r.users[u.ID] = u
+
+	return u, nil
 }
 
 func (r *Repository) GetAll() []User {
@@ -30,52 +50,14 @@ func (r *Repository) GetAll() []User {
 	defer r.mu.RUnlock()
 
 	result := make([]User, 0, len(r.users))
-
-	for _, user := range r.users {
-		result = append(result, user)
-	}
-
-	return result
-}
-
-func (r *Repository) ExistsByEmail(email string) bool {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
 	for _, u := range r.users {
-		if u.Email == email {
-			return true
-		}
+		result = append(result, u)
 	}
 
-	return false
-}
-
-func (r *Repository) Count() int {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return len(r.users)
-}
-
-func (r *Repository) NextID() string {
-	return fmt.Sprintf("%d", r.Count()+1)
-}
-
-func (r *Repository) Create(u User) (User, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	// перевірка на дублікат email
-	for _, user := range r.users {
-		if user.Email == u.Email {
-			return User{}, errors.New("email already exists")
-		}
-	}
-
-	// призначаємо ID через NextID()
-	u.ID = r.NextID()
-
-	// зберігаємо
-	r.users[u.ID] = u
-	return u, nil
+	sort.Slice(result, func(i, j int) bool {
+		left, _ := strconv.Atoi(result[i].ID)
+		right, _ := strconv.Atoi(result[j].ID)
+		return left < right
+	})
+	return result
 }

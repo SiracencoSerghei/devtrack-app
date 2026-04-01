@@ -1,43 +1,35 @@
 package router
 
 import (
-	"net/http"
-	"encoding/json"
+    "encoding/json"
+    "net/http"
 
-	"github.com/SiracencoSerghei/devtrack-app/internal/handler"
-	"github.com/SiracencoSerghei/devtrack-app/internal/middleware"
-	"github.com/SiracencoSerghei/devtrack-app/internal/user"
+    "github.com/go-chi/chi/v5"
+    "github.com/go-chi/chi/v5/middleware"
+
+    "github.com/SiracencoSerghei/devtrack-app/internal/health"
+    "github.com/SiracencoSerghei/devtrack-app/internal/user"
 )
 
-func New() *http.ServeMux {
-	return http.NewServeMux()
+func New() *chi.Mux {
+    r := chi.NewRouter()
+    r.Use(middleware.Logger)
+    r.Use(middleware.Recoverer)
+    return r
 }
 
-func RegisterRootRoute(mux *http.ServeMux) {
-	mux.Handle("/", middleware.Logging(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := map[string]string{"message": "server running"}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-	})))
+func RegisterRootRoute(r *chi.Mux) {
+    r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "application/json")
+        _ = json.NewEncoder(w).Encode(map[string]string{"message": "server running"})
+    })
 }
 
-func RegisterHealthRoutes(mux *http.ServeMux, h *handler.HealthHandler) {
-
-	mux.Handle(
-		"/health",
-		middleware.Logging(http.HandlerFunc(h.Health)),
-	)
+func RegisterHealthRoutes(r *chi.Mux, h *health.Handler) {
+    r.Get("/health", h.Check)
 }
 
-func RegisterUserRoutes(mux *http.ServeMux, h *user.Handler) {
-	mux.Handle("/users", middleware.Logging(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			h.Create(w, r)
-		case http.MethodGet:
-			h.GetAll(w, r)
-		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
-		}
-	})))
+func RegisterUserRoutes(r *chi.Mux, h *user.Handler) {
+    r.Post("/users", h.Create)
+    r.Get("/users", h.GetAll)
 }
