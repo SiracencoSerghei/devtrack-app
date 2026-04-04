@@ -1,63 +1,57 @@
 package user
 
 import (
-	"errors"
-	"fmt"
-	"sort"
-	"strconv"
-	"sync"
+    "errors"
+    "sort"
+    "sync"
+
+    "github.com/google/uuid"
 )
 
-// UserRepository interface for testable service
-type UserRepository interface {
-	Create(u User) (User, error)
-	GetAll() []User
+type Repository interface {
+    Create(u User) (User, error)
+    GetAll() []User
 }
 
-// InMemory repo only for tests/dev
-type Repository struct {
-	mu     sync.RWMutex
-	users  map[string]User
-	nextID int
+type InMemoryRepository struct {
+    mu    sync.RWMutex
+    users map[string]User
 }
 
-func NewRepository() *Repository {
-	return &Repository{
-		users:  make(map[string]User),
-		nextID: 1,
-	}
+func NewInMemoryRepository() *InMemoryRepository {
+    return &InMemoryRepository{
+        users: make(map[string]User),
+    }
 }
 
-func (r *Repository) Create(u User) (User, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *InMemoryRepository) Create(u User) (User, error) {
+    r.mu.Lock()
+    defer r.mu.Unlock()
 
-	for _, existing := range r.users {
-		if existing.Email == u.Email {
-			return User{}, errors.New("email already exists")
-		}
-	}
+    for _, existing := range r.users {
+        if existing.Email == u.Email {
+            return User{}, errors.New("email already exists")
+        }
+    }
 
-	u.ID = fmt.Sprintf("%d", r.nextID)
-	r.nextID++
-	r.users[u.ID] = u
+    u.ID = uuid.NewString()
+    r.users[u.ID] = u
 
-	return u, nil
+    return u, nil
 }
 
-func (r *Repository) GetAll() []User {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *InMemoryRepository) GetAll() []User {
+    r.mu.RLock()
+    defer r.mu.RUnlock()
 
-	result := make([]User, 0, len(r.users))
-	for _, u := range r.users {
-		result = append(result, u)
-	}
+    result := make([]User, 0, len(r.users))
+    for _, u := range r.users {
+        result = append(result, u)
+    }
 
-	sort.Slice(result, func(i, j int) bool {
-		left, _ := strconv.Atoi(result[i].ID)
-		right, _ := strconv.Atoi(result[j].ID)
-		return left < right
-	})
-	return result
+    sort.Slice(result, func(i, j int) bool {
+        return result[i].Name < result[j].Name
+    })
+
+    return result
 }
