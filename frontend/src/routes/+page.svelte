@@ -1,13 +1,16 @@
 <script>
     import { onMount } from 'svelte';
-    let status = 'Checking...';
+    
+    let status = $state('Checking...');
 
     onMount(async () => {
         try {
-            // Nota: in SvelteKit lato client, la porta è quella del backend
             const res = await fetch('http://localhost:8080/health');
+            if (!res.ok) throw new Error('Backend error');
+            
             const data = await res.json();
-            status = data.status;
+            // This mutation will now trigger a UI update correctly!
+            status = data.status || 'OK'; 
         } catch (e) {
             status = 'Server offline';
         }

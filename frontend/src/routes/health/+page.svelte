@@ -1,14 +1,19 @@
 <script>
     import { onMount } from 'svelte';
-    let data = "In attesa...";
+    
+    // Runa per la reattività
+    let data = $state("In attesa...");
 
     onMount(async () => {
         try {
+            console.log("Tentativo fetch...");
             const response = await fetch('http://localhost:8080/health');
             const result = await response.json();
-            data = JSON.stringify(result); // Dovrebbe stampare {"status":"ok"}
+            console.log("Risposta ricevuta:", result);
+            data = JSON.stringify(result);
         } catch (err) {
-            data = "Errore di connessione: " + err.message;
+            console.error("Errore fetch:", err);
+            data = "Errore: " + err.message;
         }
     });
 </script>
