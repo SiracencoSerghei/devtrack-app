@@ -3,8 +3,9 @@ package router
 import (
     "encoding/json"
     "net/http"
-
     "github.com/go-chi/chi/v5"
+    "github.com/go-chi/cors"
+
     chimiddleware "github.com/go-chi/chi/v5/middleware"
 
     appmiddleware "github.com/SiracencoSerghei/devtrack-app/internal/middleware"
@@ -14,6 +15,14 @@ import (
 
 func New(userHandler *user.Handler, healthHandler *health.Handler) *chi.Mux {
     r := chi.NewRouter()
+
+    // Esempio per go-chi
+    r.Use(cors.Handler(cors.Options{
+        AllowedOrigins:   []string{"http://localhost:5173"},
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+        AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+        AllowCredentials: true,
+    }))
 
     r.Use(chimiddleware.Recoverer)
     r.Use(chimiddleware.RequestID)
