@@ -32,6 +32,7 @@ func New(userHandler *user.Handler, healthHandler *health.Handler) *chi.Mux {
         w.Header().Set("Content-Type", "application/json")
         _ = json.NewEncoder(w).Encode(map[string]string{
             "message": "server running",
+            "status": "OK",
         })
     })
 

@@ -1,21 +1,32 @@
 <script>
-    import { onMount } from 'svelte';
-    
     let status = $state('Checking...');
+    let message = $state('');
 
-    onMount(async () => {
-        try {
-            const res = await fetch('http://localhost:8080/health');
-            if (!res.ok) throw new Error('Backend error');
-            
-            const data = await res.json();
-            // This mutation will now trigger a UI update correctly!
-            status = data.status || 'OK'; 
-        } catch (e) {
-            status = 'Server offline';
+    $effect(() => {
+        async function checkBackend() {
+            try {
+                const res = await fetch('http://localhost:8080');
+                if (!res.ok) throw new Error('Server error');
+
+                const data = await res.json();
+
+                status = data.status || 'OK';
+                message = data.message || '';
+            } catch (e) {
+                status = 'Server offline';
+                message = e.message;
+            }
         }
+
+        checkBackend();
     });
 </script>
 
 <h1>Home</h1>
-<p>Stato del Backend Go: <strong>{status}</strong></p>
+
+<p>Response status: <strong>{status}</strong></p>
+
+{#if message}
+    <p>Message: {message}</p>
+{/if}
+

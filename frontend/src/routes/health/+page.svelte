@@ -1,22 +1,28 @@
 <script>
-    import { onMount } from 'svelte';
-    
-    // Runa per la reattività
-    let data = $state("In attesa...");
+    let status = $state('Loading...');
+    let message = $state('');
 
-    onMount(async () => {
-        try {
-            console.log("Tentativo fetch...");
-            const response = await fetch('http://localhost:8080/health');
-            const result = await response.json();
-            console.log("Risposta ricevuta:", result);
-            data = JSON.stringify(result);
-        } catch (err) {
-            console.error("Errore fetch:", err);
-            data = "Errore: " + err.message;
+    $effect(() => {
+        async function fetchHealth() {
+            try {
+                const res = await fetch('http://localhost:8080/health');
+                const json = await res.json();
+                console.log('Risposta ricevuta:', json);
+
+                status = json.status ?? 'OK';
+                message = json.message ?? 'No message from the server';
+                
+            } catch (e) {
+                status = 'offline';
+                message = e.message;
+            }
         }
+
+        fetchHealth();
     });
 </script>
 
-<h1>DevTrack</h1>
-<p>Risposta dal backend: <strong>{data}</strong></p>
+<h1>Health</h1>
+
+<p>Status: {status}</p>
+<p>Message: {message}</p>
