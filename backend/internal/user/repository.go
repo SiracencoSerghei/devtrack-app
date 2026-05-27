@@ -4,13 +4,14 @@ import (
     "errors"
     "sort"
     "sync"
+    "context"
 
     "github.com/google/uuid"
 )
 
 type Repository interface {
-    Create(u User) (User, error)
-    GetAll() []User
+	Create(ctx context.Context, u User) (User, error)
+	GetAll(ctx context.Context) ([]User, error)
 }
 
 type InMemoryRepository struct {

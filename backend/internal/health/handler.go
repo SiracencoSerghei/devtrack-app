@@ -3,7 +3,7 @@ package health
 import (
     "net/http"
 
-    "github.com/SiracencoSerghei/devtrack-app/internal/httpx"
+    "github.com/SiracencoSerghei/devtrack-app/backend/internal/httpx"
 )
 
 type Handler struct{}

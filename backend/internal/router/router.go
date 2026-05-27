@@ -8,9 +8,9 @@ import (
 
     chimiddleware "github.com/go-chi/chi/v5/middleware"
 
-    appmiddleware "github.com/SiracencoSerghei/devtrack-app/internal/middleware"
-    "github.com/SiracencoSerghei/devtrack-app/internal/health"
-    "github.com/SiracencoSerghei/devtrack-app/internal/user"
+    appmiddleware "github.com/SiracencoSerghei/devtrack-app/backend/internal/middleware"
+    "github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
+    "github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
 )
 
 func New(userHandler *user.Handler, healthHandler *health.Handler) *chi.Mux {

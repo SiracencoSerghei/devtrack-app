@@ -5,6 +5,7 @@ import (
     "errors"
     "regexp"
     "strings"
+    "fmt"
 )
 
 var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$`)
@@ -35,7 +36,7 @@ func (s *Service) Create(ctx context.Context, name, email string) (User, error) 
         return User{}, errors.New("invalid email format")
     }
 
-    return s.repo.Create(User{
+    return s.repo.Create(ctx, User{
         Name:  name,
         Email: email,
     })
@@ -48,5 +49,10 @@ func (s *Service) GetAll(ctx context.Context) ([]User, error) {
     default:
     }
 
-    return s.repo.GetAll(), nil
+	users, err := s.repo.GetAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("service failed to get all users: %w", err)
+	}
+
+	return users, nil
 }

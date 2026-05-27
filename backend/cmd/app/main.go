@@ -1,54 +1,66 @@
 package main
 
 import (
-    "context"
-    "errors"
-    "log"
-    "net/http"
-    "os"
-    "os/signal"
-    "syscall"
-    "time"
+	"context"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-    "github.com/SiracencoSerghei/devtrack-app/internal/health"
-    "github.com/SiracencoSerghei/devtrack-app/internal/router"
-    "github.com/SiracencoSerghei/devtrack-app/internal/user"
-    "github.com/SiracencoSerghei/devtrack-app/pkg/httpserver"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/db"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/router"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
+	"github.com/SiracencoSerghei/devtrack-app/backend/pkg/httpserver"
 )
 
 func main() {
-    repo := user.NewInMemoryRepository()
-    svc := user.NewService(repo)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-    userHandler := user.NewHandler(svc)
-    healthHandler := health.NewHandler()
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://postgres:password@localhost:5432/devtrack?sslmode=disable"
+	}
 
-    r := router.New(userHandler, healthHandler)
-    server := httpserver.New(":8080", r)
+	dbPool, err := db.NewPool(ctx, dbURL)
+	if err != nil {
+		log.Fatalf("database connection failed: %v", err)
+	}
+	defer dbPool.Close()
+	log.Println("Connected to PostgreSQL successfully")
 
-    stop := make(chan os.Signal, 1)
-    signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	repo := user.NewPostgresRepository(dbPool)
+	svc := user.NewService(repo)
 
-    errChan := make(chan error, 1)
-    go func() {
-        errChan <- server.Start()
-    }()
+	userHandler := user.NewHandler(svc)
+	healthHandler := health.NewHandler()
 
-    select {
-    case err := <-errChan:
-        if err != nil && !errors.Is(err, http.ErrServerClosed) {
-            log.Fatalf("server error: %v", err)
-        }
-    case <-stop:
-        log.Println("shutdown signal received")
-    }
+	r := router.New(userHandler, healthHandler)
+	
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	server := httpserver.New(":"+port, r)
 
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- server.Start()
+	}()
 
-    if err := server.Stop(ctx); err != nil {
-        log.Printf("shutdown error: %v", err)
-    }
+	log.Printf("Server is running on port %s", port)
 
-    log.Println("server stopped")
+	<-ctx.Done()
+	log.Println("Shutdown signal received")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Stop(shutdownCtx); err != nil {
+		log.Printf("Server shutdown error: %v", err)
+	}
+
+	log.Println("Server stopped cleanly")
 }
