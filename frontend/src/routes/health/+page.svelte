@@ -1,5 +1,5 @@
 <script>
-    let status = $state('Loading...');
+    let status = $state('Caricamento...');
     let message = $state('');
 
     $effect(() => {
@@ -7,22 +7,16 @@
             try {
                 const res = await fetch('http://localhost:8080/health');
                 const json = await res.json();
-                console.log('Risposta ricevuta:', json);
-
                 status = json.status ?? 'OK';
-                message = json.message ?? 'No message from the server';
-                
             } catch (e) {
-                status = 'offline';
+                status = 'Non in linea (offline)';
                 message = e.message;
             }
         }
-
         fetchHealth();
     });
 </script>
 
-<h1>Health</h1>
-
-<p>Status: {status}</p>
-<p>Message: {message}</p>
+<h1>Stato del Sistema</h1>
+<p>Stato: <strong>{status}</strong></p>
+{#if message}<p>Dettaglio errore: {message}</p>{/if}

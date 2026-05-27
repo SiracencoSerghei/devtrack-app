@@ -1,4 +1,3 @@
-// src/lib/stores/api/client.js
 import { apiStore } from '$lib/stores/api/index.js';
 
 export async function apiFetch(url, options = {}) {

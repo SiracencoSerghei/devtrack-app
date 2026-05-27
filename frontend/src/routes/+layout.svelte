@@ -1,11 +1,12 @@
 <script>
-    // 1. Accept the 'children' prop using the Svelte 5 $props rune
+
     let { children } = $props();
 </script>
 
 <nav>
     <a href="/">Home</a>
     <a href="/about">About</a>
+    <a href="/health">health</a>
 </nav>
 
 <main>
