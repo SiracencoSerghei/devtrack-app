@@ -22,3 +22,7 @@ dev-backend: dev-env
 # Запустити фронтенд
 dev-frontend:
 	cd frontend && npm run dev
+
+# Відкрити інтерактивну консоль PostgreSQL всередині контейнера
+db-cli:
+	@docker compose exec -it postgres psql -U postgres -d devtrack
