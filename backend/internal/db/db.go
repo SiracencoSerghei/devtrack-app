@@ -30,13 +30,15 @@ func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 	CREATE TABLE IF NOT EXISTS users (
 		id UUID PRIMARY KEY,
 		name VARCHAR(255) NOT NULL,
-		email VARCHAR(255) UNIQUE NOT NULL
+		email VARCHAR(255) UNIQUE NOT NULL,
+		password_hash VARCHAR(255) NOT NULL,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 	);`
 	
 	_, err := pool.Exec(ctx, query)
 	if err != nil {
 		return err
 	}
-	log.Println("Database schema verified (tables created or already exist)")
+	log.Println("Database schema verified (users table updated)")
 	return nil
 }

@@ -1,47 +1,35 @@
 package router
 
 import (
-    "encoding/json"
-    "net/http"
-    "github.com/go-chi/chi/v5"
-    "github.com/go-chi/cors"
-
-    chimiddleware "github.com/go-chi/chi/v5/middleware"
-
-    appmiddleware "github.com/SiracencoSerghei/devtrack-app/backend/internal/middleware"
-    "github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
-    "github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
+	"net/http"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
+	
 )
 
-func New(userHandler *user.Handler, healthHandler *health.Handler) *chi.Mux {
-    r := chi.NewRouter()
+func New(u *user.Handler, h *health.Handler) http.Handler {
+	mux := http.NewServeMux()
 
-    // Esempio per go-chi
-    r.Use(cors.Handler(cors.Options{
-        AllowedOrigins:   []string{"http://localhost:5173"},
-        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-        AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-        AllowCredentials: true,
-    }))
+	mux.HandleFunc("POST /api/signup", u.SignUp)
+	mux.HandleFunc("POST /api/login", u.Login)
+	
+	mux.HandleFunc("GET /api/users", u.GetAll)
+	
+	mux.HandleFunc("GET /health", h.HealthCheck)
 
-    r.Use(chimiddleware.Recoverer)
-    r.Use(chimiddleware.RequestID)
-    r.Use(appmiddleware.Logging)
+	return applyCORS(mux)
+}
 
-    r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "application/json")
-        _ = json.NewEncoder(w).Encode(map[string]string{
-            "message": "server running",
-            "status": "OK",
-        })
-    })
-
-    r.Get("/health", healthHandler.Check)
-
-    r.Route("/users", func(r chi.Router) {
-        r.Post("/", userHandler.Create)
-        r.Get("/", userHandler.GetAll)
-    })
-
-    return r
+func applyCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

@@ -1,44 +1,74 @@
 package user
 
 import (
-    "encoding/json"
-    "net/http"
-
-    "github.com/SiracencoSerghei/devtrack-app/backend/internal/httpx"
+	"encoding/json"
+	"net/http"
 )
 
 type Handler struct {
-    service *Service
+	svc *Service
 }
 
-func NewHandler(service *Service) *Handler {
-    return &Handler{service: service}
+func NewHandler(svc *Service) *Handler {
+	return &Handler{svc: svc}
 }
 
-func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-    defer r.Body.Close()
+type signUpReq struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
-    var req CreateUserRequest
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        httpx.WriteError(w, http.StatusBadRequest, "invalid body")
-        return
-    }
+type loginReq struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
-    user, err := h.service.Create(r.Context(), req.Name, req.Email)
-    if err != nil {
-        httpx.WriteError(w, http.StatusBadRequest, err.Error())
-        return
-    }
+func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
+	var req signUpReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
 
-    httpx.WriteJSON(w, http.StatusCreated, user)
+	u, err := h.svc.SignUp(r.Context(), req.Name, req.Email, req.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(u)
+}
+
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	var req loginReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	token, u, err := h.svc.Login(r.Context(), req.Email, req.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"token": token,
+		"user":  u,
+	})
 }
 
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
-    users, err := h.service.GetAll(r.Context())
-    if err != nil {
-        httpx.WriteError(w, http.StatusInternalServerError, err.Error())
-        return
-    }
+	users, err := h.svc.GetAll(r.Context())
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    httpx.WriteJSON(w, http.StatusOK, users)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
 }

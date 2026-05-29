@@ -1,58 +1,47 @@
 package user
 
 import (
-    "context"
-    "errors"
-    "regexp"
-    "strings"
-    "fmt"
+	"context"
+	"errors"
+	"fmt"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
 )
 
-var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$`)
-
 type Service struct {
-    repo Repository
+	repo Repository
 }
 
 func NewService(repo Repository) *Service {
-    return &Service{repo: repo}
+	return &Service{repo: repo}
 }
 
-func (s *Service) Create(ctx context.Context, name, email string) (User, error) {
-    select {
-    case <-ctx.Done():
-        return User{}, ctx.Err()
-    default:
-    }
+func (s *Service) SignUp(ctx context.Context, name, email, password string) (User, error) {
+	if name == "" || email == "" || password == "" {
+		return User{}, errors.New("tutti i campi sono obbligatori")
+	}
+	
+	u := User{Name: name, Email: email}
+	return s.repo.Create(ctx, u, password)
+}
 
-    name = strings.TrimSpace(name)
-    email = strings.TrimSpace(strings.ToLower(email))
+func (s *Service) Login(ctx context.Context, email, password string) (string, User, error) {
+	u, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		return "", User{}, errors.New("credenziali non valide")
+	}
 
-    if name == "" || email == "" {
-        return User{}, errors.New("name and email are required")
-    }
+	if !auth.CheckPasswordHash(password, u.PasswordHash) {
+		return "", User{}, errors.New("credenziali non valide")
+	}
 
-    if !emailRegex.MatchString(email) {
-        return User{}, errors.New("invalid email format")
-    }
+	token, err := auth.GenerateToken(u.ID, u.Email)
+	if err != nil {
+		return "", User{}, fmt.Errorf("failed to generate token: %w", err)
+	}
 
-    return s.repo.Create(ctx, User{
-        Name:  name,
-        Email: email,
-    })
+	return token, u, nil
 }
 
 func (s *Service) GetAll(ctx context.Context) ([]User, error) {
-    select {
-    case <-ctx.Done():
-        return nil, ctx.Err()
-    default:
-    }
-
-	users, err := s.repo.GetAll(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("service failed to get all users: %w", err)
-	}
-
-	return users, nil
+	return s.repo.GetAll(ctx)
 }
