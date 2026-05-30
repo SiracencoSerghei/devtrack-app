@@ -1,19 +1,18 @@
 <script>
+    import { onMount } from 'svelte';
+
     let status = $state('Verifica in corso...');
     let message = $state('');
-    
-    let name = $state('');
-    let email = $state('');
     let users = $state([]);
-    let formMessage = $state('');
+    let userLoggedIn = $state(null);
 
     async function checkBackend() {
         try {
-            const res = await fetch('http://localhost:8080');
+            const res = await fetch('http://localhost:8080/health');
             if (!res.ok) throw new Error('Errore del server');
             const data = await res.json();
             status = data.status || 'OK';
-            message = data.message || '';
+            message = data.messaggio || '';
         } catch (e) {
             status = 'Server offline';
             message = e.message;
@@ -21,102 +20,114 @@
     }
 
     async function loadUsers() {
-        try {
-            const res = await fetch('http://localhost:8080/users');
-            if (res.ok) {
-                users = await res.json();
-            }
-        } catch (e) {
-            console.error("Errore nel caricamento degli utenti:", e);
-        }
-    }
+        const token = localStorage.getItem('token');
+        if (!token) return;
 
-    async function createUser(event) {
-        event.preventDefault();
-        formMessage = '';
         try {
-            const res = await fetch('http://localhost:8080/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email })
+            
+            const res = await fetch('http://localhost:8080/api/users', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
-            const data = await res.json();
-
-            if (!res.ok) {
-                if (data.error === "name and email are required") {
-                    formMessage = "Il nome e l'email sono obbligatori.";
-                } else if (data.error === "invalid email format") {
-                    formMessage = "Formato email non valido.";
-                } else if (data.error === "email already exists") {
-                    formMessage = "Questa email è già registrata.";
-                } else {
-                    formMessage = `Errore: ${data.error}`;
-                }
-                return;
+            if (res.ok) {
+                users = await res.json();
+            } else {
+                console.error("Accesso negato o errore nel caricamento degli utenti");
             }
-
-            formMessage = "Utente creato con successo!";
-            name = '';
-            email = '';
-            loadUsers();
         } catch (e) {
-            formMessage = `Errore di connessione: ${e.message}`;
+            console.error("Errore di connessione:", e);
         }
     }
 
-    $effect(() => {
+    onMount(() => {
         checkBackend();
-        loadUsers();
+        
+        const localUser = localStorage.getItem('user');
+        if (localUser) {
+            userLoggedIn = JSON.parse(localUser);
+            loadUsers();
+        }
     });
 </script>
 
 <h1>Benvenuto su DevTrack</h1>
 
 <section class="status">
-    <p>Stato del server: <strong>{status}</strong></p>
+    <p>Stato del server: <strong class="status-{status.toLowerCase().replace(' ', '-')}">{status}</strong></p>
     {#if message}<p>Messaggio: {message}</p>{/if}
 </section>
 
 <hr />
 
-<section>
-    <h2>Crea un nuovo utente</h2>
-    <form onsubmit={createUser}>
-        <div>
-            <label for="name">Nome:</label>
-            <input type="text" id="name" bind:value={name} placeholder="Es. Mario Rossi" />
+{#if userLoggedIn}
+    <section class="dashboard">
+        <h2>Benvenuto a bordo, {userLoggedIn.name}!</h2>
+        <p>Ecco la lista degli utenti registrati nel sistema:</p>
+        
+        {#if users.length === 0}
+            <p class="empty-msg">Nessun utente trovato o caricamento в corso...</p>
+        {:else}
+            <ul class="user-list">
+                {#each users as u}
+                    <li>
+                        <span class="user-name">{u.name}</span> 
+                        <span class="user-email">({u.email})</span>
+                    </li>
+                {/each}
+            </ul>
+        {/if}
+    </section>
+{:else}
+    <section class="guest-box">
+        <h2>Area Riservata</h2>
+        <p>Per vedere gli utenti registrati ed accedere alle funzionalità di DevTrack, devi avere un account.</p>
+        <div class="auth-buttons">
+            <a href="/login" class="btn btn-login">Accedi (Login)</a>
+            <a href="/signup" class="btn btn-signup">Registrati (Sign up)</a>
         </div>
-        <div>
-            <label for="email">Email:</label>
-            <input type="email" id="email" bind:value={email} placeholder="mario.rossi@example.com" />
-        </div>
-        <button type="submit">Registra Utente</button>
-    </form>
-    
-    {#if formMessage}
-        <p class="notification">{formMessage}</p>
-    {/if}
-</section>
-
-<hr />
-
-<section>
-    <h2>Lista Utenti registrati</h2>
-    {#if users.length === 0}
-        <p>Nessun utente trovato.</p>
-    {:else}
-        <ul>
-            {#each users as u}
-                <li><strong>{u.name}</strong> ({u.email})</li>
-            {/each}
-        </ul>
-    {/if}
-</section>
+    </section>
+{/if}
 
 <style>
-    section { margin: 1.5rem 0; }
-    form div { margin-bottom: 0.5rem; }
-    label { display: inline-block; width: 80px; }
-    .notification { color: blue; font-weight: bold; }
+    section { margin: 2rem 0; font-family: sans-serif; }
+   
+    .status-ok { color: green; }
+    .status-server-offline { color: red; }
+
+    .guest-box {
+        background: #f9f9f9;
+        padding: 2rem;
+        border-radius: 8px;
+        border: 1px dashed #ccc;
+        text-align: center;
+    }
+    .auth-buttons { margin-top: 1.5rem; }
+    .btn {
+        display: inline-block;
+        padding: 0.6rem 1.2rem;
+        margin: 0 0.5rem;
+        text-decoration: none;
+        font-weight: bold;
+        border-radius: 4px;
+    }
+    .btn-login { background: #eee; color: #333; border: 1px solid #ccc; }
+    .btn-signup { background: #0076ff; color: white; }
+    .btn-signup:hover { background: #005bc5; }
+
+    .user-list { list-style: none; padding: 0; }
+    .user-list li { 
+        padding: 0.6rem; 
+        background: #f1f5f9; 
+        margin-bottom: 0.5rem; 
+        border-radius: 4px; 
+        border-left: 4px solid #0076ff;
+    }
+    .user-name { font-weight: bold; color: #1e293b; }
+    .user-email { color: #64748b; margin-left: 0.5rem; }
+    .empty-msg { color: #666; font-style: italic; }
 </style>

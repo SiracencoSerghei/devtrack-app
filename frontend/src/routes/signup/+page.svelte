@@ -22,8 +22,8 @@
             });
 
             if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'Errore durante la registrazione');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Errore durante la registrazione');
             }
 
             successMessage = 'Registrazione completata! Verrai reindirizzato al login...';

@@ -3,6 +3,7 @@ package user
 import (
 	"encoding/json"
 	"net/http"
+	"errors"
 )
 
 type Handler struct {
@@ -33,7 +34,28 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	u, err := h.svc.SignUp(r.Context(), req.Name, req.Email, req.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
+		w.Header().Set("Content-Type", "application/json")
+
+		if errors.Is(err, ErrInvalidInput) || errors.Is(err, ErrInvalidEmail) || errors.Is(err, ErrShortPwd) {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		if errors.Is(err, ErrEmailAlreadyExists) {
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Questo indirizzo email è già utilizzato da un altro utente.",
+			})
+			return
+		}
+		
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Si è verificato un errore interno. Riprova più tardi.",
+		})
 		return
 	}
 

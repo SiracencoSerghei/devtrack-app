@@ -3,9 +3,12 @@ package user
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"log"
+	
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
 )
 
@@ -13,23 +16,38 @@ type PostgresRepository struct {
 	db *pgxpool.Pool
 }
 
+var (
+	ErrEmailAlreadyExists = errors.New("email già registrata nel sistema")
+	ErrInternalDatabase   = errors.New("errore interno del database")
+)
+
 func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
+
 
 func (r *PostgresRepository) Create(ctx context.Context, u User, password string) (User, error) {
 	u.ID = uuid.NewString()
 	
 	hashedPassword, err := auth.HashPassword(password)
 	if err != nil {
-		return User{}, fmt.Errorf("failed to hash password: %w", err)
+		log.Printf("[ERROR] Auth failed to hash password: %v", err) // Лог для нас
+		return User{}, ErrInternalDatabase
 	}
 	u.PasswordHash = hashedPassword
 
 	query := `INSERT INTO users (id, name, email, password_hash) VALUES ($1, $2, $3, $4);`
 	_, err = r.db.Exec(ctx, query, u.ID, u.Name, u.Email, u.PasswordHash)
+	
 	if err != nil {
-		return User{}, fmt.Errorf("failed to insert user: %w", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return User{}, ErrEmailAlreadyExists
+		}
+		
+		log.Printf("[CRITICAL DATABASE ERROR]: %v | Query: %s", err, query)
+		
+		return User{}, ErrInternalDatabase
 	}
 
 	return u, nil

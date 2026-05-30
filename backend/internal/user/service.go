@@ -4,8 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
+	
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
 )
+
+var (
+	ErrInvalidInput = errors.New("tutti i campi (nome, email, password) sono obbligatori")
+	ErrInvalidEmail = errors.New("il formato dell'indirizzo email non è valido")
+	ErrShortPwd     = errors.New("la password deve contenere almeno 6 caratteri")
+)
+
+var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
 
 type Service struct {
 	repo Repository
@@ -16,10 +27,22 @@ func NewService(repo Repository) *Service {
 }
 
 func (s *Service) SignUp(ctx context.Context, name, email, password string) (User, error) {
+
+	name = strings.TrimSpace(name)
+	email = strings.ToLower(strings.TrimSpace(email))
+
 	if name == "" || email == "" || password == "" {
-		return User{}, errors.New("tutti i campi sono obbligatori")
+		return User{}, ErrInvalidInput
 	}
-	
+
+	if !emailRegex.MatchString(email) {
+		return User{}, ErrInvalidEmail
+	}
+
+	if len(password) < 6 {
+		return User{}, ErrShortPwd
+	}
+
 	u := User{Name: name, Email: email}
 	return s.repo.Create(ctx, u, password)
 }
