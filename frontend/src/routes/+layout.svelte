@@ -1,34 +1,38 @@
 <script>
-    import { onMount } from 'svelte';
 
     let { children } = $props();
 
     let user = $state(null);
 
     function checkAuth() {
-        const token = localStorage.getItem('token');
-        const userData = localStorage.getItem('user');
+        const token = localStorage.getItem('access_token');
+        const userData = localStorage.getItem('user_data');
         
         if (token && userData) {
-            user = JSON.parse(userData);
+            try {
+                user = JSON.parse(userData);
+            } catch (e) {
+                console.error("Errore nel parsing dei dati utente nel layout:", e);
+                user = null;
+            }
         } else {
             user = null;
         }
     }
 
-    onMount(() => {
+
+    $effect(() => {
         checkAuth();
 
         window.addEventListener('storage', checkAuth);
         return () => window.removeEventListener('storage', checkAuth);
     });
 
-    
     function logout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_data');
         user = null;
-        window.location.href = '/login'; // Перенаправляємо на сторінку входу
+        window.location.href = '/login';
     }
 </script>
 

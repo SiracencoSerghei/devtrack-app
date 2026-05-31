@@ -2,22 +2,32 @@ package router
 
 import (
 	"net/http"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
 	
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/middleware"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user/delivery"
 )
 
-func New(u *user.Handler, h *health.Handler) http.Handler {
+func New(u *delivery.HTTPHandler, h *health.Handler) http.Handler {
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"app": "DevTrack Clean API", "status": "running"}`))
+	})
 
 	mux.HandleFunc("POST /api/signup", u.SignUp)
 	mux.HandleFunc("POST /api/login", u.Login)
-	
-	mux.HandleFunc("GET /api/users", u.GetAll)
-	
 	mux.HandleFunc("GET /health", h.HealthCheck)
 
-	return applyCORS(mux)
+
+	mux.Handle("GET /api/users", middleware.Auth(http.HandlerFunc(u.GetAll)))
+
+	return middleware.Logging(applyCORS(mux))
 }
 
 func applyCORS(next http.Handler) http.Handler {

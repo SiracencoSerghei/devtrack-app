@@ -3,64 +3,47 @@ package main
 import (
 	"context"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
+	"net/http"
 	"time"
 
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/db"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/router"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
-	"github.com/SiracencoSerghei/devtrack-app/backend/pkg/httpserver"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user/delivery"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user/repository"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user/usecase"
 )
 
 func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	log.Println("[START] Inizializzazione del server DevTrack...")
 
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		dbURL = "postgres://postgres:password@localhost:5432/devtrack?sslmode=disable"
-	}
-
-	dbPool, err := db.NewPool(ctx, dbURL)
-	if err != nil {
-		log.Fatalf("database connection failed: %v", err)
-	}
-	defer dbPool.Close()
-	log.Println("Connected to PostgreSQL successfully")
-
-	repo := user.NewPostgresRepository(dbPool)
-	svc := user.NewService(repo)
-
-	userHandler := user.NewHandler(svc)
-	healthHandler := health.NewHandler()
-
-	r := router.New(userHandler, healthHandler)
-	
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	server := httpserver.New(":"+port, r)
-
-	errChan := make(chan error, 1)
-	go func() {
-		errChan <- server.Start()
-	}()
-
-	log.Printf("Server is running on port %s", port)
-
-	<-ctx.Done()
-	log.Println("Shutdown signal received")
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := server.Stop(shutdownCtx); err != nil {
-		log.Printf("Server shutdown error: %v", err)
+	pool, err := db.Connect(ctx)
+	if err != nil {
+		log.Fatalf("[FATAL] Impossibile connettersi al database: %v", err)
+	}
+	defer pool.Close()
+
+	userRepo := repository.NewPostgresRepository(pool)
+	userUseCase := usecase.NewUserUseCase(userRepo)
+	userHandler := delivery.NewHTTPHandler(userUseCase)
+
+	healthHandler := health.NewHandler()
+
+	appRouter := router.New(userHandler, healthHandler)
+
+	
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      appRouter,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
 	}
 
-	log.Println("Server stopped cleanly")
+	log.Println("[READY] Server in ascolto sulla porta :8080 🚀")
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("[FATAL] Errore durante l'esecuzione del server: %v", err)
+	}
 }

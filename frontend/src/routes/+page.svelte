@@ -1,5 +1,4 @@
 <script>
-    import { onMount } from 'svelte';
 
     let status = $state('Verifica in corso...');
     let message = $state('');
@@ -20,39 +19,68 @@
     }
 
     async function loadUsers() {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
         try {
-            
-            const res = await fetch('http://localhost:8080/api/users', {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                console.error("Token non trovato. Utente non autenticato.");
+                return;
+            }
+
+            const response = await fetch('http://localhost:8080/api/users', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    
                     'Authorization': `Bearer ${token}`
                 }
             });
 
-            if (res.ok) {
-                users = await res.json();
-            } else {
-                console.error("Accesso negato o errore nel caricamento degli utenti");
+            if (!response.ok) {
+                if (response.status === 401) {
+
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user_data');
+                    userLoggedIn = null;
+                    alert("Sessione scaduta. Per favore, effettua nuovamente il login.");
+                }
+                throw new Error(`Errore del server: ${response.status}`);
             }
-        } catch (e) {
-            console.error("Errore di connessione:", e);
+
+            const data = await response.json();
+            users = data || []; 
+
+        } catch (err) {
+            console.error("Impossibile caricare gli utenti:", err);
         }
     }
 
-    onMount(() => {
+    $effect(() => {
+
         checkBackend();
-        
-        const localUser = localStorage.getItem('user');
-        if (localUser) {
-            userLoggedIn = JSON.parse(localUser);
-            loadUsers();
+
+        const token = localStorage.getItem('access_token');
+        const savedUser = localStorage.getItem('user_data');
+
+        if (token && savedUser) {
+            try {
+
+                userLoggedIn = JSON.parse(savedUser);
+
+                loadUsers();
+            } catch (e) {
+                console.error("Errore nel parsing dei dati utente", e);
+                localStorage.removeItem('user_data');
+            }
         }
     });
+
+    function handleLogout() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_data');
+        userLoggedIn = null;
+        users = [];
+
+        window.location.href = '/login';
+    }
 </script>
 
 <h1>Benvenuto su DevTrack</h1>
@@ -66,11 +94,14 @@
 
 {#if userLoggedIn}
     <section class="dashboard">
-        <h2>Benvenuto a bordo, {userLoggedIn.name}!</h2>
+        <div class="dashboard-header">
+            <h2>Benvenuto a bordo, {userLoggedIn.name}!</h2>
+            <button onclick={handleLogout} class="btn-logout">Esci (Logout)</button>
+        </div>
         <p>Ecco la lista degli utenti registrati nel sistema:</p>
         
         {#if users.length === 0}
-            <p class="empty-msg">Nessun utente trovato o caricamento в corso...</p>
+            <p class="empty-msg">Nessun utente trovato o caricamento in corso...</p>
         {:else}
             <ul class="user-list">
                 {#each users as u}
@@ -98,6 +129,23 @@
    
     .status-ok { color: green; }
     .status-server-offline { color: red; }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-logout {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-logout:hover { background: #dc2626; }
 
     .guest-box {
         background: #f9f9f9;

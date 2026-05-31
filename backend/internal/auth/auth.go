@@ -42,3 +42,19 @@ func GenerateToken(userID, email string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtKey)
 }
+
+func ValidateToken(tokenStr string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	
+	claims, ok := token.Claims.(*Claims)
+	if ok && token.Valid {
+		return claims, nil
+	}
+	
+	return nil, jwt.ErrSignatureInvalid
+}

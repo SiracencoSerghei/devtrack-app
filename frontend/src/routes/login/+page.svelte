@@ -15,15 +15,14 @@
             });
 
             if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'Credenziali non valide');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Credenziali non valide');
             }
 
             const data = await response.json();
             
-            
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('user_data', JSON.stringify(data.user));
 
             window.location.href = '/';
 

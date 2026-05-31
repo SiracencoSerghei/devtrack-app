@@ -22,9 +22,13 @@ clean:
 	docker compose down -v
 
 # Запустити бекенд у режимі розробки (тепер команда чиста, без хардкоду зміних)
-dev-backend: dev-env
-	cd backend && go build -o devtrack ./cmd/app/ && ./devtrack
-
+dev-backend:
+	docker compose up -d
+	@echo "Чекаємо на повну готовність бази даних..."
+	docker compose exec -T postgres sh -c "until pg_isready -U \$${POSTGRES_USER} -d \$${POSTGRES_DB}; do sleep 0.5; done"
+	@echo "PostgreSQL готовий до роботи!"
+	cd backend && go build -o devtrack ./cmd/app/ && DB_HOST=localhost DB_USER=$(POSTGRES_USER) DB_PASSWORD=$(POSTGRES_PASSWORD) DB_NAME=$(POSTGRES_DB) ./devtrack
+	
 # Запустити фронтенд
 dev-frontend:
 	cd frontend && npm run dev
