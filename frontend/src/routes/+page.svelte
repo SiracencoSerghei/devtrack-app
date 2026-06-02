@@ -94,10 +94,7 @@
 
 {#if userLoggedIn}
     <section class="dashboard">
-        <div class="dashboard-header">
-            <h2>Benvenuto a bordo, {userLoggedIn.name}!</h2>
-            <button onclick={handleLogout} class="btn-logout">Esci (Logout)</button>
-        </div>
+        
         <p>Ecco la lista degli utenti registrati nel sistema:</p>
         
         {#if users.length === 0}
@@ -129,12 +126,6 @@
    
     .status-ok { color: green; }
     .status-server-offline { color: red; }
-
-    .dashboard-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
 
     .btn-logout {
         background: #ef4444;

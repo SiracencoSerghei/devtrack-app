@@ -45,8 +45,10 @@
 
     <div class="auth-links">
         {#if user}
-            <span class="welcome-msg">Ciao, <strong>{user.name}</strong>!</span>
+            <div class="dashboard-header">
+            <span class="welcome-msg">Ciao, Benvenuto a bordo! <strong>{user.name}</strong>!</span>
             <button onclick={logout} class="btn-logout">Esci</button>
+            </div>
         {:else}
             <a href="/login" class="btn-login">Accedi</a>
             <a href="/signup" class="btn-signup">Registrati</a>
@@ -101,5 +103,11 @@
     .btn-signup:hover {
         background: #005bc5;
         text-decoration: none !important;
+    }
+
+    .dashboard-header {
+        /* display: flex; */
+        justify-content: space-between;
+        align-items: center;
     }
 </style>
