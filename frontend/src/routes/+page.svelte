@@ -1,28 +1,36 @@
 <script>
+    import { i18n } from '$lib/i18n/i18n.svelte.js';
 
-    let status = $state('Verifica in corso...');
+    let statusKey = $state('checking');
     let message = $state('');
+    let messageKey = $state('');
     let users = $state([]);
     let userLoggedIn = $state(null);
 
-    async function checkBackend() {
+   async function checkBackend() {
         try {
             const res = await fetch('http://localhost:8080/health');
-            if (!res.ok) throw new Error('Errore del server');
+            if (!res.ok) throw new Error('Offline');
             const data = await res.json();
-            status = data.status || 'OK';
-            message = data.messaggio || '';
+            
+            if (data.status === 'OK') {
+                statusKey = 'ok';
+                messageKey = 'msg_running';
+            } else {
+                statusKey = 'error';
+                messageKey = ''; 
+            }
         } catch (e) {
-            status = 'Server offline';
-            message = e.message;
+            statusKey = 'offline';
+            messageKey = 'offline_msg';
         }
     }
-
+    
     async function loadUsers() {
         try {
             const token = localStorage.getItem('access_token');
             if (!token) {
-                console.error("Token non trovato. Utente non autenticato.");
+                console.error(i18n.t('errors.no_token'));
                 return;
             }
 
@@ -36,25 +44,23 @@
 
             if (!response.ok) {
                 if (response.status === 401) {
-
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('user_data');
                     userLoggedIn = null;
-                    alert("Sessione scaduta. Per favore, effettua nuovamente il login.");
+                    alert(i18n.t('errors.session_expired'));
                 }
-                throw new Error(`Errore del server: ${response.status}`);
+                throw new Error(`${i18n.t('errors.server_error')}: ${response.status}`);
             }
 
             const data = await response.json();
             users = data || []; 
 
         } catch (err) {
-            console.error("Impossibile caricare gli utenti:", err);
+            console.error(i18n.t('errors.load_failed'), err);
         }
     }
 
     $effect(() => {
-
         checkBackend();
 
         const token = localStorage.getItem('access_token');
@@ -62,12 +68,10 @@
 
         if (token && savedUser) {
             try {
-
                 userLoggedIn = JSON.parse(savedUser);
-
                 loadUsers();
             } catch (e) {
-                console.error("Errore nel parsing dei dati utente", e);
+                console.error("Error parsing user data", e);
                 localStorage.removeItem('user_data');
             }
         }
@@ -78,16 +82,23 @@
         localStorage.removeItem('user_data');
         userLoggedIn = null;
         users = [];
-
         window.location.href = '/login';
     }
 </script>
 
-<h1>Benvenuto su DevTrack</h1>
+<h1>{i18n.t('home.title')}</h1>
 
 <section class="status">
-    <p>Stato del server: <strong class="status-{status.toLowerCase().replace(' ', '-')}">{status}</strong></p>
-    {#if message}<p>Messaggio: {message}</p>{/if}
+    <p>
+        {i18n.t('server.status')} 
+        <strong class="status-{statusKey}">
+            {i18n.t(`server.${statusKey}`)}
+        </strong>
+    </p>
+    
+    {#if messageKey}
+        <p>{i18n.t('server.message')} {i18n.t(`server.${messageKey}`)}</p>
+    {/if}
 </section>
 
 <hr />
@@ -95,10 +106,10 @@
 {#if userLoggedIn}
     <section class="dashboard">
         
-        <p>Ecco la lista degli utenti registrati nel sistema:</p>
+        <p>{i18n.t('home.user_list')}</p>
         
         {#if users.length === 0}
-            <p class="empty-msg">Nessun utente trovato o caricamento in corso...</p>
+            <p class="empty-msg">{i18n.t('home.loading_or_empty')}</p>
         {:else}
             <ul class="user-list">
                 {#each users as u}
@@ -112,31 +123,21 @@
     </section>
 {:else}
     <section class="guest-box">
-        <h2>Area Riservata</h2>
-        <p>Per vedere gli utenti registrati ed accedere alle funzionalità di DevTrack, devi avere un account.</p>
+        <h2>{i18n.t('home.area_reserved')}</h2>
+        <p>{i18n.t('home.guest_msg')}</p>
         <div class="auth-buttons">
-            <a href="/login" class="btn btn-login">Accedi (Login)</a>
-            <a href="/signup" class="btn btn-signup">Registrati (Sign up)</a>
+            <a href="/login" class="btn btn-login">{i18n.t('auth.login')}</a>
+            <a href="/signup" class="btn btn-signup">{i18n.t('auth.signup')}</a>
         </div>
     </section>
 {/if}
 
 <style>
     section { margin: 2rem 0; font-family: sans-serif; }
-   
-    .status-ok { color: green; }
-    .status-server-offline { color: red; }
 
-    .btn-logout {
-        background: #ef4444;
-        color: white;
-        border: none;
-        padding: 0.4rem 0.8rem;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-    }
-    .btn-logout:hover { background: #dc2626; }
+    .status-ok { color: green; }
+    .status-offline, .status-error { color: red; }
+    .status-checking { color: orange; }
 
     .guest-box {
         background: #f9f9f9;

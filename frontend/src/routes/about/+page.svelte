@@ -1,4 +1,17 @@
-<h1>Chi siamo</h1>
-<p>DevTrack è un'applicazione di monitoraggio dei progetti sviluppata con Go e Svelte. Fornisce funzionalità per gestire utenti, progetti e attività, offrendo un'interfaccia intuitiva per migliorare la produttività del team.</p>
+<script>
+    import { i18n } from '$lib/i18n/i18n.svelte.js';
+</script>
 
-<p>Questa è la devtrack-app costruita con Go e Svelte!</p>
+<h1>{i18n.t('about.title')}</h1>
+
+<p>{i18n.t('about.description')}</p>
+
+<p>{i18n.t('about.subtitle')}</p>
+
+<style>
+    p {
+        line-height: 1.6;
+        color: #333;
+        font-family: sans-serif;
+    }
+</style>

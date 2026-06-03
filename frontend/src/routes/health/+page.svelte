@@ -1,5 +1,7 @@
 <script>
-    let status = $state('Caricamento...');
+    import { i18n } from '$lib/i18n/i18n.svelte.js';
+
+    let statusKey = $state('loading');
     let message = $state('');
 
     $effect(() => {
@@ -7,9 +9,14 @@
             try {
                 const res = await fetch('http://localhost:8080/health');
                 const json = await res.json();
-                status = json.status ?? 'OK';
+                
+                if (json.status === 'OK') {
+                    statusKey = 'ok';
+                } else {
+                    statusKey = 'offline';
+                }
             } catch (e) {
-                status = 'Non in linea (offline)';
+                statusKey = 'offline';
                 message = e.message;
             }
         }
@@ -17,6 +24,10 @@
     });
 </script>
 
-<h1>Stato del Sistema</h1>
-<p>Stato: <strong>{status}</strong></p>
-{#if message}<p>Dettaglio errore: {message}</p>{/if}
+<h1>{i18n.t('health.title')}</h1>
+
+<p>{i18n.t('health.status')} <strong>{i18n.t(`health.${statusKey}`)}</strong></p>
+
+{#if message}
+    <p>{i18n.t('health.error_detail')} {message}</p>
+{/if}

@@ -1,11 +1,15 @@
 <script>
+    import { i18n } from '$lib/i18n/i18n.svelte.js';
+
     let email = $state('');
     let password = $state('');
-    let errorMessage = $state('');
+    let errorKey = $state(''); 
+    let customError = $state('');
 
     async function handleLogin(e) {
         e.preventDefault();
-        errorMessage = '';
+        errorKey = '';
+        customError = '';
 
         try {
             const response = await fetch('http://localhost:8080/api/login', {
@@ -16,44 +20,56 @@
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Credenziali non valide');
+                if (response.status === 401 || errorData.error === 'Credenziali non valide') {
+                    errorKey = 'invalid_creds'; // Mappa l'errore sul dizionario
+                } else {
+                    customError = errorData.error || response.statusText;
+                }
+                return;
             }
 
             const data = await response.json();
-            
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('user_data', JSON.stringify(data.user));
-
             window.location.href = '/';
 
         } catch (err) {
-            errorMessage = err.message;
+            errorKey = 'offline_msg'; 
         }
     }
 </script>
 
 <div class="auth-container">
-    <h2>Accedi a DevTrack</h2>
+    <h2>{i18n.t('login_page.title')}</h2>
     
-    {#if errorMessage}
-        <div class="alert alert-danger">{errorMessage}</div>
+    {#if errorKey}
+        <div class="alert alert-danger">
+            {errorKey === 'offline_msg' ? i18n.t('server.offline_msg') : i18n.t(`login_page.${errorKey}`)}
+        </div>
+    {:else}
+        {#if customError}
+            <div class="alert alert-danger">{customError}</div>
+        {/if}
     {/if}
 
     <form onsubmit={handleLogin}>
         <div class="form-group">
-            <label for="email">Indirizzo Email</label>
+            <label for="email">{i18n.t('login_page.email_label')}</label>
             <input type="email" id="email" bind:value={email} required placeholder="mario@rossi.it" />
         </div>
 
         <div class="form-group">
-            <label for="password">Password</label>
+            <label for="password">{i18n.t('login_page.password_label')}</label>
             <input type="password" id="password" bind:value={password} required placeholder="••••••••" />
         </div>
 
-        <button type="submit" class="btn-submit">Accedi</button>
+        <button type="submit" class="btn-submit">{i18n.t('login_page.btn_submit')}</button>
     </form>
     
-    <p class="switch-auth">Non hai un account? <a href="/signup">Registrati qui</a></p>
+    <p class="switch-auth">
+        {i18n.t('login_page.no_account')} 
+        <a href="/signup">{i18n.t('login_page.register_link')}</a>
+    </p>
 </div>
 
 <style>

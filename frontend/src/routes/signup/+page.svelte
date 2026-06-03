@@ -1,20 +1,21 @@
 <script>
-    import { onMount } from 'svelte';
-
+    import { i18n } from '$lib/i18n/i18n.svelte.js';
     
     let name = $state('');
     let email = $state('');
     let password = $state('');
-    let errorMessage = $state('');
-    let successMessage = $state('');
+    
+    let errorKey = $state('');
+    let successKey = $state('');
+    let customError = $state('');
 
     async function handleSignUp(e) {
         e.preventDefault();
-        errorMessage = '';
-        successMessage = '';
+        errorKey = '';
+        successKey = '';
+        customError = '';
 
         try {
-            
             const response = await fetch('http://localhost:8080/api/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -23,52 +24,61 @@
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Errore durante la registrazione');
+                customError = errorData.error || i18n.t('signup_page.error_msg');
+                return;
             }
 
-            successMessage = 'Registrazione completata! Verrai reindirizzato al login...';
-            
+            successKey = 'success_msg';
             
             setTimeout(() => {
                 window.location.href = '/login';
             }, 2000);
 
         } catch (err) {
-            errorMessage = err.message;
+            errorKey = 'offline_msg';
         }
     }
 </script>
 
 <div class="auth-container">
-    <h2>Crea un nuovo account</h2>
-    
-    {#if errorMessage}
-        <div class="alert alert-danger">{errorMessage}</div>
+    <h2>{i18n.t('signup_page.title')}</h2>
+    {#if errorKey}
+        <div class="alert alert-danger">
+            {errorKey === 'offline_msg' ? i18n.t('server.offline_msg') : i18n.t(`signup_page.${errorKey}`)}
+        </div>
+    {:else}
+        {#if customError}
+            <div class="alert alert-danger">{customError}</div>
+        {/if}
     {/if}
-    {#if successMessage}
-        <div class="alert alert-success">{successMessage}</div>
+
+    {#if successKey}
+        <div class="alert alert-success">{i18n.t(`signup_page.${successKey}`)}</div>
     {/if}
 
     <form onsubmit={handleSignUp}>
         <div class="form-group">
-            <label for="name">Nome completo</label>
-            <input type="text" id="name" bind:value={name} required placeholder="Es. Mario Rossi" />
+            <label for="name">{i18n.t('signup_page.name_label')}</label>
+            <input type="text" id="name" bind:value={name} required placeholder={i18n.t('signup_page.name_placeholder')} />
         </div>
 
         <div class="form-group">
-            <label for="email">Indirizzo Email</label>
+            <label for="email">{i18n.t('signup_page.email_label')}</label>
             <input type="email" id="email" bind:value={email} required placeholder="mario@rossi.it" />
         </div>
 
         <div class="form-group">
-            <label for="password">Password</label>
+            <label for="password">{i18n.t('signup_page.password_label')}</label>
             <input type="password" id="password" bind:value={password} required placeholder="••••••••" />
         </div>
 
-        <button type="submit" class="btn-submit">Registrati</button>
+        <button type="submit" class="btn-submit">{i18n.t('signup_page.btn_submit')}</button>
     </form>
     
-    <p class="switch-auth">Hai già un account? <a href="/login">Accedi qui</a></p>
+    <p class="switch-auth">
+        {i18n.t('signup_page.has_account')} 
+        <a href="/login">{i18n.t('signup_page.login_link')}</a>
+    </p>
 </div>
 
 <style>
