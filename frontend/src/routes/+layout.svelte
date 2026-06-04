@@ -3,6 +3,7 @@
     
     let { children } = $props();
     let user = $state(null);
+    let currentLang = $derived(i18n.lang);
 
     function checkAuth() {
         const token = localStorage.getItem('access_token');
@@ -25,6 +26,7 @@
 </script>
 
 <nav>
+
     <div class="nav-links">
         <a href="/">{i18n.t('nav.home')}</a>
         <a href="/about">{i18n.t('nav.about')}</a>
@@ -42,8 +44,8 @@
             <span class="welcome-msg">{i18n.t('auth.welcome')}, <strong>{user.name}</strong>!</span>
             <button onclick={logout} class="btn-logout">{i18n.t('auth.logout')}</button>
         {:else}
-            <a href="/login" class="btn-login">{i18n.t('auth.login')}</a>
-            <a href="/signup" class="btn-signup">{i18n.t('auth.signup')}</a>
+            <a href="/login" class="btn-login">{i18n.t('auth.login') === 'auth.login' ? 'Login' : i18n.t('auth.login')}</a>
+            <a href="/signup" class="btn-signup">{i18n.t('auth.signup') === 'auth.signup' ? 'Sign Up' : i18n.t('auth.signup')}</a>
         {/if}
     </div>
 </nav>

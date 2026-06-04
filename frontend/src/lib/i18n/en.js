@@ -1,6 +1,5 @@
 export const en = {
 	nav: { home: 'Home', about: 'About', health: 'Health' },
-	auth: { login: 'Login', signup: 'Sign Up', logout: 'Logout', welcome: 'Hello' },
 	home: {
 		title: 'Welcome to DevTrack',
 		area_reserved: 'Restricted Area',
@@ -59,4 +58,12 @@ export const en = {
 		success_msg: 'Registration completed! Redirecting to login...',
 		error_msg: 'Error during registration'
 	},
+	auth: { 
+        login: "Login", 
+        signup: "Sign Up", 
+        logout: "Logout", 
+        welcome: "Welcome",
+        show_password: "Show password",
+        hide_password: "Hide password"
+    },
 };

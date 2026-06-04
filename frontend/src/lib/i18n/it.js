@@ -1,6 +1,5 @@
 export const it = {
 	nav: { home: 'Home', about: 'Chi Siamo', health: 'Stato' },
-	auth: { login: 'Accedi', signup: 'Registrati', logout: 'Esci', welcome: 'Ciao' },
 	home: {
 		title: 'Benvenuto su DevTrack',
 		area_reserved: 'Area Riservata',
@@ -59,5 +58,13 @@ export const it = {
 		login_link: 'Accedi qui',
 		success_msg: 'Registrazione completata! Verrai reindirizzato al login...',
 		error_msg: 'Errore durante la registrazione'
+	},
+	auth: {
+		login: 'Accedi',
+		signup: 'Registrati',
+		logout: 'Esci',
+		welcome: 'Benvenuto',
+		show_password: 'Mostra password',
+		hide_password: 'Nascondi password'
 	},
 };

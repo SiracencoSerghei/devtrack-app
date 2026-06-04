@@ -1,6 +1,5 @@
 export const uk = {
 	nav: { home: 'Головна', about: 'Про нас', health: 'Статус' },
-	auth: { login: 'Увійти', signup: 'Реєстрація', logout: 'Вийти', welcome: 'Привіт' },
 	home: {
 		title: 'Ласкаво просимо до DevTrack',
 		area_reserved: 'Обмежений доступ',
@@ -59,5 +58,13 @@ export const uk = {
 		login_link: 'Увійти тут',
 		success_msg: 'Реєстрація успішна! Вас буде перенаправлено на сторінку входу...',
 		error_msg: 'Помилка під час реєстрації'
+	},
+	auth: { 
+		login: "Увійти", 
+        signup: "Реєстрація", 
+        logout: "Вийти", 
+        welcome: "Ласкаво просимо",
+        show_password: "Показати пароль",
+		hide_password: "Приховати пароль"
 	},
 };
