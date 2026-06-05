@@ -8,6 +8,7 @@ import (
 	"strings"
 	
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/db"
 )
 
 var (
@@ -19,11 +20,11 @@ var (
 var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
 
 type Service struct {
-	repo Repository
+    repo db.UserRepository
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo db.UserRepository) *Service {
+    return &Service{repo: repo}
 }
 
 func (s *Service) SignUp(ctx context.Context, name, email, password string) (User, error) {

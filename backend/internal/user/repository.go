@@ -1,59 +1,43 @@
 package user
 
 import (
-    "errors"
-    "sort"
-    "sync"
-    "context"
-
-    "github.com/google/uuid"
+	"database/sql"
+	"errors"
+	"fmt"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/db"
 )
 
-type Repository interface {
-	Create(ctx context.Context, u User, password string) (User, error)
-	GetByEmail(ctx context.Context, email string) (User, error)
-	GetAll(ctx context.Context) ([]User, error)
+type UserStore struct {
+	storage *db.PostgresDB
 }
 
-type InMemoryRepository struct {
-    mu    sync.RWMutex
-    users map[string]User
+func NewUserStore(storage *db.PostgresDB) *UserStore {
+	return &UserStore{storage: storage}
 }
 
-func NewInMemoryRepository() *InMemoryRepository {
-    return &InMemoryRepository{
-        users: make(map[string]User),
-    }
+func (s *UserStore) CreateUser(name, email, passwordHash string) error {
+	query := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3)`
+	
+	_, err := s.storage.DB.Exec(query, name, email, passwordHash)
+	if err != nil {
+		return fmt.Errorf("fallimento inserimento utente in Postgres: %w", err)
+	}
+	
+	return nil
 }
 
-func (r *InMemoryRepository) Create(u User) (User, error) {
-    r.mu.Lock()
-    defer r.mu.Unlock()
-
-    for _, existing := range r.users {
-        if existing.Email == u.Email {
-            return User{}, errors.New("email already exists")
-        }
-    }
-
-    u.ID = uuid.NewString()
-    r.users[u.ID] = u
-
-    return u, nil
-}
-
-func (r *InMemoryRepository) GetAll() []User {
-    r.mu.RLock()
-    defer r.mu.RUnlock()
-
-    result := make([]User, 0, len(r.users))
-    for _, u := range r.users {
-        result = append(result, u)
-    }
-
-    sort.Slice(result, func(i, j int) bool {
-        return result[i].Name < result[j].Name
-    })
-
-    return result
+func (s *UserStore) GetUserByEmail(email string) (*db.UserField, error) {
+	query := `SELECT id, name, email, password_hash FROM users WHERE email = $1`
+	
+	var u db.UserField
+	err := s.storage.DB.QueryRow(query, email).Scan(&u.ID, &u.Name, &u.Email, &u.PasswordHash)
+	
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil 
+		}
+		return nil, fmt.Errorf("errore durante la query di selezione utente: %w", err)
+	}
+	
+	return &u, nil
 }

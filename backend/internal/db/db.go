@@ -1,71 +1,41 @@
 package db
 
 import (
-	"context"
-	"fmt"
-	"os"
+	"database/sql"
+	"log"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/lib/pq"
 )
 
-func Connect(ctx context.Context) (*pgxpool.Pool, error) {
 
-	host := os.Getenv("DB_HOST")
-	if host == "" { host = "localhost" }
-	
-	user := os.Getenv("DB_USER")
-	if user == "" { user = "postgres" }
-	
-	password := os.Getenv("DB_PASSWORD")
-	if password == "" { password = "postgres" }
-	
-	dbname := os.Getenv("DB_NAME")
-	if dbname == "" { dbname = "devtrack_db" }
-
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable", user, password, host, dbname)
-
-	pool, err := pgxpool.New(ctx, dsn)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create connection pool: %w", err)
-	}
-
-	if err := pool.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("unable to ping database: %w", err)
-	}
-// Автоматично створюємо/оновлюємо таблиці (наш Clean-шар)
-	if err := ensureSchema(ctx, pool); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
-	}
-
-	return pool, nil
+type UserRepository interface {
+	CreateUser(name, email, passwordHash string) error
+	GetUserByEmail(email string) (*UserField, error)
 }
 
-func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
-	userQuery := `
-	CREATE TABLE IF NOT EXISTS users (
-		id UUID PRIMARY KEY,
-		name VARCHAR(255) NOT NULL,
-		email VARCHAR(255) UNIQUE NOT NULL,
-		password_hash VARCHAR(255) NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);`
-	
-	if _, err := pool.Exec(ctx, userQuery); err != nil {
-		return fmt.Errorf("failed to create users table: %w", err)
+
+type UserField struct {
+	ID           int
+	Name         string
+	Email        string
+	PasswordHash string
+}
+
+
+type PostgresDB struct {
+	DB *sql.DB
+}
+
+func NewPostgresDB(dataSourceName string) *PostgresDB {
+	db, err := sql.Open("postgres", dataSourceName)
+	if err != nil {
+		log.Fatalf("Impossibile aprire la connessione al database: %v", err)
 	}
 
-	sessionQuery := `
-	CREATE TABLE IF NOT EXISTS user_sessions (
-		id UUID PRIMARY KEY,
-		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		refresh_token VARCHAR(255) UNIQUE NOT NULL,
-		expires_at TIMESTAMP NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);`
-
-	if _, err := pool.Exec(ctx, sessionQuery); err != nil {
-		return fmt.Errorf("failed to create user_sessions table: %w", err)
+	if err = db.Ping(); err != nil {
+		log.Fatalf("Database non raggiungibile (Ping fallito): %v", err)
 	}
 
-	return nil
+	log.Println("Connessione a PostgreSQL stabilita con successo!")
+	return &PostgresDB{DB: db}
 }
