@@ -14,6 +14,8 @@ var (
 	ErrInvalidInput = errors.New("tutti i campi (nome, email, password) sono obbligatori")
 	ErrInvalidEmail = errors.New("il formato dell'indirizzo email non è valido")
 	ErrShortPwd     = errors.New("la password deve contenere almeno 6 caratteri")
+
+	ErrEmailAlreadyExists = errors.New("esiste già un utente con questo indirizzo email")
 )
 
 var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
@@ -44,6 +46,14 @@ func (s *Service) SignUp(ctx context.Context, name, email, password string) (Use
 	}
 
 	u := User{Name: name, Email: email}
+
+	hashedPassword, err := auth.HashPassword(password)
+	if err != nil {
+		return User{}, err
+	}
+
+	u.PasswordHash = hashedPassword
+
 	return s.repo.Create(ctx, u, password)
 }
 

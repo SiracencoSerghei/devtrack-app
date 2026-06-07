@@ -6,7 +6,7 @@
     let currentLang = $derived(i18n.lang);
 
     function checkAuth() {
-        const token = localStorage.getItem('access_token');
+        const token = localStorage.getItem('token');
         const userData = localStorage.getItem('user_data');
         if (token && userData) {
             try { user = JSON.parse(userData); } catch (e) { user = null; }
@@ -18,7 +18,7 @@
     });
 
     function logout() {
-        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
         localStorage.removeItem('user_data');
         user = null;
         window.location.href = '/login';

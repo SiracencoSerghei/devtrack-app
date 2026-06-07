@@ -28,7 +28,7 @@
     
     async function loadUsers() {
         try {
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('token');
             if (!token) {
                 console.error(i18n.t('errors.no_token'));
                 return;
@@ -44,7 +44,7 @@
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('token');
                     localStorage.removeItem('user_data');
                     userLoggedIn = null;
                     alert(i18n.t('errors.session_expired'));
@@ -63,7 +63,7 @@
     $effect(() => {
         checkBackend();
 
-        const token = localStorage.getItem('access_token');
+        const token = localStorage.getItem('token');
         const savedUser = localStorage.getItem('user_data');
 
         if (token && savedUser) {
@@ -78,7 +78,7 @@
     });
 
     function handleLogout() {
-        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
         localStorage.removeItem('user_data');
         userLoggedIn = null;
         users = [];

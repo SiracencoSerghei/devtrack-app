@@ -9,30 +9,47 @@ import (
 )
 
 type contextKey string
-const UserIDKey contextKey = "userID"
+
+const userKey contextKey = "user"
+
+type AuthClaims struct {
+	UserID string
+	Email  string
+}
 
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Accesso negato: Token mancante", http.StatusUnauthorized)
+
+		header := r.Header.Get("Authorization")
+		if header == "" {
+			http.Error(w, "missing authorization header", http.StatusUnauthorized)
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
+		parts := strings.SplitN(header, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, "Accesso negato: Formato token non valido", http.StatusUnauthorized)
+			http.Error(w, "invalid authorization format", http.StatusUnauthorized)
 			return
 		}
 
-		tokenString := parts[1]
-		claims, err := auth.ValidateToken(tokenString) // Assicurati che nel tuo pacchetto auth ci sia un metodo per validare e ritornare i claims
+		tokenStr := parts[1]
+
+		claims, err := auth.ValidateToken(tokenStr)
 		if err != nil {
-			http.Error(w, "Accesso negato: Token scaduto o non valido", http.StatusUnauthorized)
+			http.Error(w, "invalid or expired token", http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
+		ctx := context.WithValue(r.Context(), userKey, AuthClaims{
+			UserID: claims.UserID,
+			Email:  claims.Email,
+		})
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func GetUser(ctx context.Context) (AuthClaims, bool) {
+	user, ok := ctx.Value(userKey).(AuthClaims)
+	return user, ok
 }

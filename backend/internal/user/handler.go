@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"errors"
+	"log"
 )
-
 type Handler struct {
 	svc *Service
 }
@@ -34,6 +34,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	u, err := h.svc.SignUp(r.Context(), req.Name, req.Email, req.Password)
 	if err != nil {
+		log.Printf("[SIGNUP ERROR] %v", err)
 		w.Header().Set("Content-Type", "application/json")
 
 		if errors.Is(err, ErrInvalidInput) || errors.Is(err, ErrInvalidEmail) || errors.Is(err, ErrShortPwd) {

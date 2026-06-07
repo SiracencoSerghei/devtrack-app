@@ -9,9 +9,7 @@ import (
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/db"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/router"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user/delivery"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user/repository"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user/usecase"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
 )
 
 func main() {
@@ -26,15 +24,14 @@ func main() {
 	}
 	defer pool.Close()
 
-	userRepo := repository.NewPostgresRepository(pool)
-	userUseCase := usecase.NewUserUseCase(userRepo)
-	userHandler := delivery.NewHTTPHandler(userUseCase)
+	userRepo := user.NewPostgresRepository(pool)
+	userService := user.NewService(userRepo)
+	userHandler := user.NewHandler(userService)
 
 	healthHandler := health.NewHandler()
 
 	appRouter := router.New(userHandler, healthHandler)
 
-	
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      appRouter,
