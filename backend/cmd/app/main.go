@@ -10,6 +10,7 @@ import (
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/router"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/role"
 )
 
 func main() {
@@ -24,8 +25,12 @@ func main() {
 	}
 	defer pool.Close()
 
+	roleRepo := role.NewPostgresRepository(pool)
+
 	userRepo := user.NewPostgresRepository(pool)
-	userService := user.NewService(userRepo)
+
+	userService := user.NewService(userRepo, roleRepo)
+
 	userHandler := user.NewHandler(userService)
 
 	healthHandler := health.NewHandler()

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 	
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
 )
@@ -21,40 +20,49 @@ var (
 var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
 
 type Service struct {
-	repo Repository
+	repo       Repository
+	roleRepo   RoleRepository
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repository, roleRepo RoleRepository) *Service {
+	return &Service{
+		repo:     repo,
+		roleRepo: roleRepo,
+	}
+}
+type RoleRepository interface {
+	AssignRole(ctx context.Context, userID, roleID string) error
+	GetByName(ctx context.Context, name string) (string, error)
 }
 
 func (s *Service) SignUp(ctx context.Context, name, email, password string) (User, error) {
 
-	name = strings.TrimSpace(name)
-	email = strings.ToLower(strings.TrimSpace(email))
-
 	if name == "" || email == "" || password == "" {
 		return User{}, ErrInvalidInput
-	}
-
-	if !emailRegex.MatchString(email) {
-		return User{}, ErrInvalidEmail
 	}
 
 	if len(password) < 6 {
 		return User{}, ErrShortPwd
 	}
 
-	u := User{Name: name, Email: email}
+	u := User{
+		Name:  name,
+		Email: email,
+	}
 
-	hashedPassword, err := auth.HashPassword(password)
+	createdUser, err := s.repo.Create(ctx, u, password)
 	if err != nil {
 		return User{}, err
 	}
 
-	u.PasswordHash = hashedPassword
+	roleID, err := s.roleRepo.GetByName(ctx, "driver")
+	if err != nil {
+		return User{}, err
+	}
 
-	return s.repo.Create(ctx, u, password)
+	_ = s.roleRepo.AssignRole(ctx, createdUser.ID, roleID)
+
+	return createdUser, nil
 }
 
 func (s *Service) Login(ctx context.Context, email, password string) (string, User, error) {
