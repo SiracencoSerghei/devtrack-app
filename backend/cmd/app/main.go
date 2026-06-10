@@ -6,11 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/db"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/router"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/role"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/bootstrap"
 )
 
 func main() {
@@ -19,33 +15,15 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	pool, err := db.Connect(ctx)
+	// Avvia il bootstrap dell'intera applicazione
+	app, err := bootstrap.Initialize(ctx)
 	if err != nil {
-		log.Fatalf("[FATAL] Impossibile connettersi al database: %v", err)
+		log.Fatalf("[FATAL] Errore durante l'inizializzazione: %v", err)
 	}
-	defer pool.Close()
-
-	roleRepo := role.NewPostgresRepository(pool)
-
-	userRepo := user.NewPostgresRepository(pool)
-
-	userService := user.NewService(userRepo, roleRepo)
-
-	userHandler := user.NewHandler(userService)
-
-	healthHandler := health.NewHandler()
-
-	appRouter := router.New(userHandler, healthHandler)
-
-	server := &http.Server{
-		Addr:         ":8080",
-		Handler:      appRouter,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-	}
+	defer app.Close()
 
 	log.Println("[READY] Server in ascolto sulla porta :8080 🚀")
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := app.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("[FATAL] Errore durante l'esecuzione del server: %v", err)
 	}
 }

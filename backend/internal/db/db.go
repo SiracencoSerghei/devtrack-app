@@ -90,5 +90,19 @@ func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 		return fmt.Errorf("failed to create user_sessions table: %w", err)
 	}
 
+	// 5. Tabella Profili Driver (Messa al posto giusto! ✅)
+	driverQuery := `
+	CREATE TABLE IF NOT EXISTS drivers (
+		id UUID PRIMARY KEY,
+		user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+		license_number VARCHAR(50) NOT NULL,
+		phone VARCHAR(50),
+		status VARCHAR(20) DEFAULT 'AVAILABLE',
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);`
+	if _, err := pool.Exec(ctx, driverQuery); err != nil {
+		return fmt.Errorf("failed to create drivers table: %w", err)
+	}
+
 	return nil
 }

@@ -6,9 +6,10 @@ import (
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/middleware"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/driver"
 )
 
-func New(u *user.Handler, h *health.Handler) http.Handler {
+func New(u *user.Handler, h *health.Handler, d *driver.Handler) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -19,6 +20,10 @@ func New(u *user.Handler, h *health.Handler) http.Handler {
 	mux.HandleFunc("POST /api/signup", u.SignUp)
 	mux.HandleFunc("POST /api/login", u.Login)
 	mux.HandleFunc("GET /health", h.HealthCheck)
+
+	// 🌟 Nuove rotte per la gestione dei Driver protette da Token JWT
+	mux.Handle("POST /api/drivers", middleware.Auth(http.HandlerFunc(d.CreateProfile)))
+	mux.Handle("GET /api/drivers", middleware.Auth(http.HandlerFunc(d.GetProfile)))
 
 	mux.Handle("GET /api/users",
 		middleware.Auth(http.HandlerFunc(u.GetAll)),
