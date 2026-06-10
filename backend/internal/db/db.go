@@ -9,7 +9,6 @@ import (
 )
 
 func Connect(ctx context.Context) (*pgxpool.Pool, error) {
-
 	host := os.Getenv("DB_HOST")
 	if host == "" { host = "localhost" }
 	
@@ -32,7 +31,7 @@ func Connect(ctx context.Context) (*pgxpool.Pool, error) {
 	if err := pool.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("unable to ping database: %w", err)
 	}
-// Автоматично створюємо/оновлюємо таблиці (наш Clean-шар)
+
 	if err := ensureSchema(ctx, pool); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
@@ -41,6 +40,7 @@ func Connect(ctx context.Context) (*pgxpool.Pool, error) {
 }
 
 func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
+	// 1. Tabella Utenti
 	userQuery := `
 	CREATE TABLE IF NOT EXISTS users (
 		id UUID PRIMARY KEY,
@@ -49,11 +49,35 @@ func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 		password_hash VARCHAR(255) NOT NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);`
-	
 	if _, err := pool.Exec(ctx, userQuery); err != nil {
 		return fmt.Errorf("failed to create users table: %w", err)
 	}
 
+	// 2. Tabella Ruoli
+	roleQuery := `
+	CREATE TABLE IF NOT EXISTS roles (
+		id UUID PRIMARY KEY,
+		name VARCHAR(50) UNIQUE NOT NULL
+	);`
+	if _, err := pool.Exec(ctx, roleQuery); err != nil {
+		return fmt.Errorf("failed to create roles table: %w", err)
+	}
+
+	// Inserimento ruolo di default per il driver
+	_, _ = pool.Exec(ctx, "INSERT INTO roles (id, name) VALUES ('6a2f72ec-5536-407b-bc83-49d799299446', 'driver') ON CONFLICT DO NOTHING")
+
+	// 3. Tabella Relazione Utenti-Ruoli
+	userRolesQuery := `
+	CREATE TABLE IF NOT EXISTS user_roles (
+		user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+		role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
+		PRIMARY KEY (user_id, role_id)
+	);`
+	if _, err := pool.Exec(ctx, userRolesQuery); err != nil {
+		return fmt.Errorf("failed to create user_roles table: %w", err)
+	}
+
+	// 4. Tabella Sessioni
 	sessionQuery := `
 	CREATE TABLE IF NOT EXISTS user_sessions (
 		id UUID PRIMARY KEY,
@@ -62,7 +86,6 @@ func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 		expires_at TIMESTAMP NOT NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);`
-
 	if _, err := pool.Exec(ctx, sessionQuery); err != nil {
 		return fmt.Errorf("failed to create user_sessions table: %w", err)
 	}
