@@ -10,18 +10,17 @@ import (
 )
 
 var (
-	ErrInvalidInput = errors.New("tutti i campi (nome, email, password) sono obbligatori")
-	ErrInvalidEmail = errors.New("il formato dell'indirizzo email non è valido")
-	ErrShortPwd     = errors.New("la password deve contenere almeno 6 caratteri")
-
+	ErrInvalidInput       = errors.New("tutti i campi (nome, email, password) sono obbligatori")
+	ErrInvalidEmail       = errors.New("il formato dell'indirizzo email non è valido")
+	ErrShortPwd           = errors.New("la password deve contenere almeno 6 caratteri")
 	ErrEmailAlreadyExists = errors.New("esiste già un utente con questo indirizzo email")
 )
 
 var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
 
 type Service struct {
-	repo       Repository
-	roleRepo   RoleRepository
+	repo     Repository
+	roleRepo RoleRepository
 }
 
 func NewService(repo Repository, roleRepo RoleRepository) *Service {
@@ -30,19 +29,19 @@ func NewService(repo Repository, roleRepo RoleRepository) *Service {
 		roleRepo: roleRepo,
 	}
 }
-type RoleRepository interface {
-	AssignRole(ctx context.Context, userID, roleID string) error
-	GetByName(ctx context.Context, name string) (string, error)
-}
 
 func (s *Service) SignUp(ctx context.Context, name, email, password string) (User, error) {
-
 	if name == "" || email == "" || password == "" {
 		return User{}, ErrInvalidInput
 	}
 
 	if len(password) < 6 {
 		return User{}, ErrShortPwd
+	}
+
+	totalUsers, err := s.repo.Count(ctx)
+	if err != nil {
+		totalUsers = 0
 	}
 
 	u := User{
@@ -55,13 +54,20 @@ func (s *Service) SignUp(ctx context.Context, name, email, password string) (Use
 		return User{}, err
 	}
 
-	roleID, err := s.roleRepo.GetByName(ctx, "driver")
-	if err != nil {
-		return User{}, err
+	rolesToAssign := []string{"driver"}
+	
+	if totalUsers == 0 {
+		rolesToAssign = []string{"driver", "dispatcher", "admin"}
 	}
 
-	_ = s.roleRepo.AssignRole(ctx, createdUser.ID, roleID)
+	for _, roleName := range rolesToAssign {
+		roleID, err := s.roleRepo.GetByName(ctx, roleName)
+		if err == nil {
+			_ = s.roleRepo.AssignRole(ctx, createdUser.ID, roleID)
+		}
+	}
 
+	createdUser.Roles, _ = s.roleRepo.GetByUserID(ctx, createdUser.ID)
 	return createdUser, nil
 }
 
@@ -75,7 +81,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, Us
 		return "", User{}, errors.New("credenziali non valide")
 	}
 
-	token, err := auth.GenerateToken(u.ID, u.Email)
+	token, err := auth.GenerateToken(u.ID, u.Email, u.Roles)
 	if err != nil {
 		return "", User{}, fmt.Errorf("failed to generate token: %w", err)
 	}

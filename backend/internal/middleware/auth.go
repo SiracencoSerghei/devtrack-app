@@ -15,11 +15,11 @@ const userKey contextKey = "user"
 type AuthClaims struct {
 	UserID string
 	Email  string
+	Roles  []string
 }
 
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		header := r.Header.Get("Authorization")
 		if header == "" {
 			http.Error(w, "missing authorization header", http.StatusUnauthorized)
@@ -33,7 +33,6 @@ func Auth(next http.Handler) http.Handler {
 		}
 
 		tokenStr := parts[1]
-
 		claims, err := auth.ValidateToken(tokenStr)
 		if err != nil {
 			http.Error(w, "invalid or expired token", http.StatusUnauthorized)
@@ -43,6 +42,7 @@ func Auth(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), userKey, AuthClaims{
 			UserID: claims.UserID,
 			Email:  claims.Email,
+			Roles:  claims.Roles,
 		})
 
 		next.ServeHTTP(w, r.WithContext(ctx))

@@ -63,10 +63,12 @@ func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 		return fmt.Errorf("failed to create roles table: %w", err)
 	}
 
-	// Inserimento ruolo di default per il driver
+	// Inserimento Ruoli Enterprise predefiniti
 	_, _ = pool.Exec(ctx, "INSERT INTO roles (id, name) VALUES ('6a2f72ec-5536-407b-bc83-49d799299446', 'driver') ON CONFLICT DO NOTHING")
+	_, _ = pool.Exec(ctx, "INSERT INTO roles (id, name) VALUES ('1a2f72ec-5536-407b-bc83-49d799299441', 'dispatcher') ON CONFLICT DO NOTHING")
+	_, _ = pool.Exec(ctx, "INSERT INTO roles (id, name) VALUES ('2a2f72ec-5536-407b-bc83-49d799299442', 'admin') ON CONFLICT DO NOTHING")
 
-	// 3. Tabella Relazione Utenti-Ruoli
+	// 3. Tabella Relazione Utenti-Ruoli (Molti-a-Molti)
 	userRolesQuery := `
 	CREATE TABLE IF NOT EXISTS user_roles (
 		user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -90,7 +92,7 @@ func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 		return fmt.Errorf("failed to create user_sessions table: %w", err)
 	}
 
-	// 5. Tabella Profili Driver (Messa al posto giusto! ✅)
+	// 5. Tabella Profili Driver
 	driverQuery := `
 	CREATE TABLE IF NOT EXISTS drivers (
 		id UUID PRIMARY KEY,

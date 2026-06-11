@@ -11,12 +11,16 @@ var jwtKey []byte
 
 func init() {
 	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "devtrack_super_secret_key_for_local_development_only_12345"
+	}
 	jwtKey = []byte(secret)
 }
 
 type Claims struct {
-	UserID string `json:"user_id"`
-	Email  string `json:"email"`
+	UserID string   `json:"user_id"`
+	Email  string   `json:"email"`
+	Roles  []string `json:"roles"`
 	jwt.RegisteredClaims
 }
 
@@ -30,11 +34,12 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func GenerateToken(userID, email string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour) // Токен діє 1 день
+func GenerateToken(userID, email string, roles []string) (string, error) {
+	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID: userID,
 		Email:  email,
+		Roles:  roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
