@@ -1,0 +1,71 @@
+:root {
+  --primary: #0f172a;       /* Slate 900 */
+  --primary-light: #1e293b; /* Slate 800 */
+  --accent: #2563eb;        /* Blue 600 */
+  --accent-hover: #1d4ed8;  
+  --background: #f8fafc;    /* Slate 50 */
+  --surface: #ffffff;
+  --text: #334155;          /* Slate 700 */
+  --text-dark: #0f172a;
+  --border: #e2e8f0;        /* Slate 200 */
+  
+  /* Stati Logistici */
+  --status-available: #10b981; /* Verde */
+  --status-intransit: #f59e0b; /* Arancione */
+  --status-offduty: #ef4444;   /* Rosso */
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Card ed Elementi Comuni */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: white;
+}
+.btn-primary:hover { background-color: var(--accent-hover); }
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.badge-available { background: #d1fae5; color: #065f46; }
+.badge-intransit { background: #fef3c7; color: #92400e; }
+.badge-offduty { background: #fee2e2; color: #991b1b; }

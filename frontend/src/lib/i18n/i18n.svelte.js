@@ -1,35 +1,36 @@
-import { it } from './it.js';
-import { uk } from './uk.js';
-import { en } from './en.js';
+import it from './it.js';
+import uk from './uk.js';
+import en from './en.js';
 
-const translations = { it, uk, en };
-let currentLang = $state(
-	typeof localStorage !== 'undefined' ? localStorage.getItem('lang') || 'it' : 'it'
-);
+const dictionaries = { it, uk, en };
 
-export const i18n = {
-	get lang() {
-		return currentLang;
-	},
+class I18nManager {
+	
+	lang = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('lang') || 'it' : 'it');
 
-	set lang(newLang) {
-		if (translations[newLang]) {
-			currentLang = newLang;
-			localStorage.setItem('lang', newLang);
-		}
-	},
-
-	t(path) {
-		const keys = path.split('.');
-		let translation = translations[currentLang];
+	t(keyPath) {
+		const keys = keyPath.split('.');
+		let current = dictionaries[this.lang];
 
 		for (const key of keys) {
-			if (translation) {
-				translation = translation[key];
+			if (current && current[key] !== undefined) {
+				current = current[key];
 			} else {
-				return path;
+				console.warn(`[i18n] Chiave mancante per la lingua "${this.lang}": ${keyPath}`);
+				return keyPath;
 			}
 		}
-		return translation || path;
+		return current;
 	}
-};
+
+	setLang(newLang) {
+		if (dictionaries[newLang]) {
+			this.lang = newLang;
+			if (typeof localStorage !== 'undefined') {
+				localStorage.setItem('lang', newLang);
+			}
+		}
+	}
+}
+
+export const i18n = new I18nManager();

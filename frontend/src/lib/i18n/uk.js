@@ -1,4 +1,4 @@
-export const uk = {
+export default {
 	nav: { home: 'Головна', about: 'Про нас', health: 'Статус' },
 	home: {
 		title: 'Ласкаво просимо до DevTrack',
@@ -59,12 +59,34 @@ export const uk = {
 		success_msg: 'Реєстрація успішна! Вас буде перенаправлено на сторінку входу...',
 		error_msg: 'Помилка під час реєстрації'
 	},
-	auth: { 
-		login: "Увійти", 
-        signup: "Реєстрація", 
-        logout: "Вийти", 
-        welcome: "Ласкаво просимо",
-        show_password: "Показати пароль",
-		hide_password: "Приховати пароль"
+	auth: {
+		login: 'Увійти',
+		signup: 'Реєстрація',
+		logout: 'Вийти',
+		welcome: 'Ласкаво просимо',
+		show_password: 'Показати пароль',
+		hide_password: 'Приховати пароль'
 	},
+	dashboard: {
+		system_infra: 'Інфраструктура ERP',
+		fleet_panel_title: '🏢 Панель управління організацією',
+		driver_panel_title: '🚚 Логістична зона водія',
+		driver_panel_desc:
+			'Крутите кермо? Керуйте інформацією про поїздки, документами та доступністю для вантажів.',
+		activation_required: '⚠️ Необхідна активація:',
+		activation_desc:
+			'Заповніть свій логістичний профіль, щоб бути включеним до активного автопарку компанії.',
+		license_label: "Номер посвідчення водія (Обов'язково)",
+		phone_label: 'Робочий телефон',
+		btn_activate: 'Активувати профіль автопарку',
+		license_num: '№ Посвідчення:',
+		phone_num: 'Телефон:',
+		status_tip: 'Готовий до отримання замовлень та відправлень від диспетчерів.',
+		operator: 'Оператор',
+		email_contact: 'Контактний Email',
+		loading_profile: 'Завантаження профілю водія...',
+		form_conn_error: 'Неможливо підключитися до сервера',
+		btn_guest_login: 'Увійти в ERP',
+		btn_guest_signup: 'Зареєструвати нового оператора'
+	}
 };

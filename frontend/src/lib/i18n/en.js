@@ -1,4 +1,4 @@
-export const en = {
+export default {
 	nav: { home: 'Home', about: 'About', health: 'Health' },
 	home: {
 		title: 'Welcome to DevTrack',
@@ -58,12 +58,33 @@ export const en = {
 		success_msg: 'Registration completed! Redirecting to login...',
 		error_msg: 'Error during registration'
 	},
-	auth: { 
-        login: "Login", 
-        signup: "Sign Up", 
-        logout: "Logout", 
-        welcome: "Welcome",
-        show_password: "Show password",
-        hide_password: "Hide password"
-    },
+	auth: {
+		login: 'Login',
+		signup: 'Sign Up',
+		logout: 'Logout',
+		welcome: 'Welcome',
+		show_password: 'Show password',
+		hide_password: 'Hide password'
+	},
+	dashboard: {
+		system_infra: 'ERP Infrastructure',
+		fleet_panel_title: '🏢 Organization Control Panel',
+		driver_panel_title: '🚚 Driver Logistics Area',
+		driver_panel_desc: 'Manage your trip information, documents, and cargo availability.',
+		activation_required: '⚠️ Activation Required:',
+		activation_desc:
+			"Complete your logistics profile to be included in the company's active fleet.",
+		license_label: 'License Number (Required)',
+		phone_label: 'Company Phone',
+		btn_activate: 'Activate Fleet Profile',
+		license_num: 'License N°:',
+		phone_num: 'Phone:',
+		status_tip: 'Ready to receive orders and shipments from dispatchers.',
+		operator: 'Operator',
+		email_contact: 'Email Contact',
+		loading_profile: 'Loading driver profile...',
+		form_conn_error: 'Unable to connect to server',
+		btn_guest_login: 'Access ERP',
+		btn_guest_signup: 'Register new operator'
+	}
 };
