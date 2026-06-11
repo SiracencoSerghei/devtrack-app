@@ -2,10 +2,18 @@ export default {
 	nav: { home: 'Home', about: 'About', health: 'Health' },
 	home: {
 		title: 'Welcome to DevTrack',
+		welcome: 'Welcome',
 		area_reserved: 'Restricted Area',
 		guest_msg: 'To see registered users and access DevTrack features, you must have an account.',
 		user_list: 'Here is the list of users registered in the system:',
-		loading_or_empty: 'No users found or loading in progress...'
+		loading_or_empty: 'No users found or loading in progress...',
+		active_roles: 'Your active roles in the system are:',
+		select_department: 'Select the operational department you want to work on today.',
+		access_denied_title: 'Access Denied',
+		access_denied_msg:
+			'You do not have the necessary permissions to access the Organization Panel.',
+		back_to_dashboard: 'Back to Dashboard',
+		active_roles_table: 'Active Roles'
 	},
 	server: {
 		status: 'Server status:',
@@ -85,6 +93,10 @@ export default {
 		loading_profile: 'Loading driver profile...',
 		form_conn_error: 'Unable to connect to server',
 		btn_guest_login: 'Access ERP',
-		btn_guest_signup: 'Register new operator'
+		btn_guest_signup: 'Register new operator',
+		driver_panel_desc_placeholder:
+			'Access your trip data, logistics sheets, and manage your driving license.',
+		fleet_panel_desc_placeholder:
+			'View company staff, monitor active operators, and manage authorizations.'
 	}
 };
