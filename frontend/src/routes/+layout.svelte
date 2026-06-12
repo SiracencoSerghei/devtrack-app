@@ -1,12 +1,12 @@
 <script>
     import { i18n } from '$lib/i18n/i18n.svelte.js';
+    import '../app.css';
     
     let { children } = $props();
     let user = $state(null);
-    let currentLang = $derived(i18n.lang);
 
     function checkAuth() {
-        const token = localStorage.getItem('access_token');
+        const token = localStorage.getItem('token');
         const userData = localStorage.getItem('user_data');
         if (token && userData) {
             try { user = JSON.parse(userData); } catch (e) { user = null; }
@@ -18,52 +18,102 @@
     });
 
     function logout() {
-        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
         localStorage.removeItem('user_data');
         user = null;
         window.location.href = '/login';
     }
 </script>
 
-<nav>
+<header class="main-header">
+    <div class="header-container">
+        <a href="/" class="logo">DevTrack <span>ERP</span></a>
+        
+        <nav class="nav-links">
+            <a href="/">{i18n.t('nav.home')}</a>
+            <a href="/about">{i18n.t('nav.about')}</a>
+            <a href="/health">{i18n.t('nav.health')}</a>
+        </nav>
 
-    <div class="nav-links">
-        <a href="/">{i18n.t('nav.home')}</a>
-        <a href="/about">{i18n.t('nav.about')}</a>
-        <a href="/health">{i18n.t('nav.health')}</a>
+        <div class="actions-wrapper">
+            <!-- Selettore della Lingua Coordinato con lo stile -->
+            <div class="lang-selector">
+                <button class={i18n.lang === 'it' ? 'active' : ''} onclick={() => i18n.setLang('it')}>IT</button>
+                <button class={i18n.lang === 'uk' ? 'active' : ''} onclick={() => i18n.setLang('uk')}>UA</button>
+                <button class={i18n.lang === 'en' ? 'active' : ''} onclick={() => i18n.setLang('en')}>EN</button>
+            </div>
+
+            <div class="auth-links">
+                {#if user}
+                    <div class="user-badge">
+                        <span class="welcome-msg">{i18n.t('auth.welcome') || 'Welcome'}, <strong>{user.name}</strong></span>
+                    </div>
+                    <button onclick={logout} class="btn btn-logout">{i18n.t('auth.logout') || 'Logout'}</button>
+                {:else}
+                    <a href="/login" class="btn btn-login-nav">{i18n.t('auth.login') || 'Login'}</a>
+                    <a href="/signup" class="btn btn-primary">{i18n.t('auth.signup') || 'Sign Up'}</a>
+                {/if}
+            </div>
+        </div>
     </div>
+</header>
 
-    <div class="lang-selector">
-        <button class={i18n.lang === 'it' ? 'active' : ''} onclick={() => i18n.lang = 'it'}>IT</button>
-        <button class={i18n.lang === 'uk' ? 'active' : ''} onclick={() => i18n.lang = 'uk'}>UA</button>
-        <button class={i18n.lang === 'en' ? 'active' : ''} onclick={() => i18n.lang = 'en'}>EN</button>
-    </div>
-
-    <div class="auth-links">
-        {#if user}
-            <span class="welcome-msg">{i18n.t('auth.welcome')}, <strong>{user.name}</strong>!</span>
-            <button onclick={logout} class="btn-logout">{i18n.t('auth.logout')}</button>
-        {:else}
-            <a href="/login" class="btn-login">{i18n.t('auth.login') === 'auth.login' ? 'Login' : i18n.t('auth.login')}</a>
-            <a href="/signup" class="btn-signup">{i18n.t('auth.signup') === 'auth.signup' ? 'Sign Up' : i18n.t('auth.signup')}</a>
-        {/if}
-    </div>
-</nav>
-
-<main>
+<main class="container">
     {@render children()}
 </main>
 
 <style>
-    nav { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding: 1rem; font-family: sans-serif; }
-    nav a { margin-right: 1rem; text-decoration: none; color: #0076ff; font-weight: 500; }
+    .main-header {
+        background: var(--primary);
+        color: white;
+        border-bottom: 1px solid var(--primary-light);
+    }
+    .header-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .logo {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: white;
+        text-decoration: none;
+    }
+    .logo span { color: var(--accent); }
+    
+    .nav-links a {
+        color: #94a3b8;
+        margin-left: 1.5rem;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    .nav-links a:hover { color: white; }
+    
+    .actions-wrapper { display: flex; align-items: center; gap: 1.5rem; }
+    
+    /* FIX: Parentesi graffa ripristinata correttamente! */
+    .lang-selector { display: flex; gap: 0.25rem; }
     
     .lang-selector button {
-        background: none; border: 1px solid #ccc; padding: 0.2rem 0.5rem; margin: 0 0.2rem; cursor: pointer; border-radius: 4px; font-size: 0.8rem;
+        background: transparent; 
+        border: 1px solid #334155; 
+        padding: 0.25rem 0.5rem; 
+        color: #94a3b8; 
+        cursor: pointer; 
+        border-radius: 4px; 
+        font-size: 0.75rem;
+        font-weight: bold;
+        transition: all 0.2s;
     }
-    .lang-selector button.active { background: #0076ff; color: white; border-color: #0076ff; font-weight: bold; }
+    .lang-selector button:hover { color: white; border-color: #475569; }
+    .lang-selector button.active { background: var(--accent); color: white; border-color: var(--accent); }
     
-    .welcome-msg { margin-right: 1rem; color: #333; }
-    .btn-logout { background: #ff3e00; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    .btn-signup { background: #0076ff; color: white !important; padding: 0.4rem 0.8rem; border-radius: 4px; }
+    .auth-links { display: flex; align-items: center; gap: 1rem; }
+    .user-badge { background: #1e293b; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.875rem; }
+    .btn-logout { background: #ef4444; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-login-nav { color: white; text-decoration: none; font-weight: 600; }
 </style>

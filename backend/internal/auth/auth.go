@@ -1,22 +1,23 @@
 package auth
 
 import (
-	"os"
 	"time"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtKey []byte
+type TokenManager struct {
+	jwtKey []byte
+}
 
-func init() {
-	secret := os.Getenv("JWT_SECRET")
-	jwtKey = []byte(secret)
+func NewTokenManager(secret string) *TokenManager {
+	return &TokenManager{jwtKey: []byte(secret)}
 }
 
 type Claims struct {
-	UserID string `json:"user_id"`
-	Email  string `json:"email"`
+	UserID string   `json:"user_id"`
+	Email  string   `json:"email"`
+	Roles  []string `json:"roles"`
 	jwt.RegisteredClaims
 }
 
@@ -30,22 +31,23 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func GenerateToken(userID, email string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour) // Токен діє 1 день
+func (tm *TokenManager) GenerateToken(userID, email string, roles []string) (string, error) {
+	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID: userID,
 		Email:  email,
+		Roles:  roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
+	return token.SignedString(tm.jwtKey)
 }
 
-func ValidateToken(tokenStr string) (*Claims, error) {
+func (tm *TokenManager) ValidateToken(tokenStr string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
+		return tm.jwtKey, nil
 	})
 	if err != nil {
 		return nil, err

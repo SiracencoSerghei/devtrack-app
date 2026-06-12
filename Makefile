@@ -38,6 +38,11 @@ db-cli:
 	@docker compose exec -it postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}
 
 
+# Запустити smoke-тести для бекенду
+smoke-backend:
+	cd backend && ./scripts/smoke.sh
+
+
 # Зверніть увагу на конструкцію \$${POSTGRES_USER} у таргеті dev-env.
 # Подвійний знак долара та зворотний слеш потрібні для того, щоб make не намагався підставити змінну сам,
 #  а передав її безпосередньо всередину контейнера Docker.

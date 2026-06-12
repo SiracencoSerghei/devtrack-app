@@ -1,43 +1,16 @@
 package user
 
-import (
-	"database/sql"
-	"errors"
-	"fmt"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/db"
-)
+import "context"
 
-type UserStore struct {
-	storage *db.PostgresDB
+type Repository interface {
+	Create(ctx context.Context, u User, password string) (User, error)
+	GetByEmail(ctx context.Context, email string) (User, error)
+	GetAll(ctx context.Context) ([]User, error)
+	Count(ctx context.Context) (int, error)
 }
 
-func NewUserStore(storage *db.PostgresDB) *UserStore {
-	return &UserStore{storage: storage}
-}
-
-func (s *UserStore) CreateUser(name, email, passwordHash string) error {
-	query := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3)`
-	
-	_, err := s.storage.DB.Exec(query, name, email, passwordHash)
-	if err != nil {
-		return fmt.Errorf("fallimento inserimento utente in Postgres: %w", err)
-	}
-	
-	return nil
-}
-
-func (s *UserStore) GetUserByEmail(email string) (*db.UserField, error) {
-	query := `SELECT id, name, email, password_hash FROM users WHERE email = $1`
-	
-	var u db.UserField
-	err := s.storage.DB.QueryRow(query, email).Scan(&u.ID, &u.Name, &u.Email, &u.PasswordHash)
-	
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil 
-		}
-		return nil, fmt.Errorf("errore durante la query di selezione utente: %w", err)
-	}
-	
-	return &u, nil
+type RoleRepository interface {
+	AssignRole(ctx context.Context, userID, roleID string) error
+	GetByName(ctx context.Context, name string) (string, error)
+	GetByUserID(ctx context.Context, userID string) ([]string, error)
 }

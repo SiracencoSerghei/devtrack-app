@@ -9,30 +9,50 @@ import (
 )
 
 type contextKey string
-const UserIDKey contextKey = "userID"
 
-func Auth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Accesso negato: Token mancante", http.StatusUnauthorized)
-			return
-		}
+const userKey contextKey = "user"
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, "Accesso negato: Formato token non valido", http.StatusUnauthorized)
-			return
-		}
+type AuthClaims struct {
+	UserID string
+	Email  string
+	Roles  []string
+}
 
-		tokenString := parts[1]
-		claims, err := auth.ValidateToken(tokenString) // Assicurati che nel tuo pacchetto auth ci sia un metodo per validare e ritornare i claims
-		if err != nil {
-			http.Error(w, "Accesso negato: Token scaduto o non valido", http.StatusUnauthorized)
-			return
-		}
+func Auth(tm *auth.TokenManager) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			header := r.Header.Get("Authorization")
+			if header == "" {
+				http.Error(w, "missing authorization header", http.StatusUnauthorized)
+				return
+			}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+			parts := strings.SplitN(header, " ", 2)
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				http.Error(w, "invalid authorization format", http.StatusUnauthorized)
+				return
+			}
+
+			tokenStr := parts[1]
+
+			claims, err := tm.ValidateToken(tokenStr)
+			if err != nil {
+				http.Error(w, "invalid or expired token", http.StatusUnauthorized)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), userKey, AuthClaims{
+				UserID: claims.UserID,
+				Email:  claims.Email,
+				Roles:  claims.Roles,
+			})
+
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func GetUser(ctx context.Context) (AuthClaims, bool) {
+	user, ok := ctx.Value(userKey).(AuthClaims)
+	return user, ok
 }

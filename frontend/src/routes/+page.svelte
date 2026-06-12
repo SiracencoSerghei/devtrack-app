@@ -2,172 +2,109 @@
     import { i18n } from '$lib/i18n/i18n.svelte.js';
 
     let statusKey = $state('checking');
-    let message = $state('');
-    let messageKey = $state('');
-    let users = $state([]);
     let userLoggedIn = $state(null);
 
-   async function checkBackend() {
+    let hasDriverRole = $derived(userLoggedIn?.roles?.includes('driver') || false);
+    let hasStaffRole = $derived(userLoggedIn?.roles?.includes('admin') || userLoggedIn?.roles?.includes('dispatcher') || false);
+    
+    async function checkBackend() {
         try {
             const res = await fetch('http://localhost:8080/health');
-            if (!res.ok) throw new Error('Offline');
-            const data = await res.json();
-            
-            if (data.status === 'OK') {
-                statusKey = 'ok';
-                messageKey = 'msg_running';
-            } else {
-                statusKey = 'error';
-                messageKey = ''; 
-            }
+            if (res.ok) statusKey = 'ok';
+            else statusKey = 'offline';
         } catch (e) {
             statusKey = 'offline';
-            messageKey = 'offline_msg';
-        }
-    }
-    
-    async function loadUsers() {
-        try {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                console.error(i18n.t('errors.no_token'));
-                return;
-            }
-
-            const response = await fetch('http://localhost:8080/api/users', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('user_data');
-                    userLoggedIn = null;
-                    alert(i18n.t('errors.session_expired'));
-                }
-                throw new Error(`${i18n.t('errors.server_error')}: ${response.status}`);
-            }
-
-            const data = await response.json();
-            users = data || []; 
-
-        } catch (err) {
-            console.error(i18n.t('errors.load_failed'), err);
         }
     }
 
     $effect(() => {
         checkBackend();
-
-        const token = localStorage.getItem('access_token');
         const savedUser = localStorage.getItem('user_data');
-
-        if (token && savedUser) {
-            try {
-                userLoggedIn = JSON.parse(savedUser);
-                loadUsers();
-            } catch (e) {
-                console.error("Error parsing user data", e);
-                localStorage.removeItem('user_data');
-            }
+        if (savedUser) {
+            try { userLoggedIn = JSON.parse(savedUser); } catch (e) {}
         }
     });
-
-    function handleLogout() {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user_data');
-        userLoggedIn = null;
-        users = [];
-        window.location.href = '/login';
-    }
 </script>
 
-<h1>{i18n.t('home.title')}</h1>
-
-<section class="status">
-    <p>
-        {i18n.t('server.status')} 
-        <strong class="status-{statusKey}">
-            {i18n.t(`server.${statusKey}`)}
-        </strong>
-    </p>
-    
-    {#if messageKey}
-        <p>{i18n.t('server.message')} {i18n.t(`server.${messageKey}`)}</p>
-    {/if}
-</section>
-
-<hr />
+<div class="dashboard-header card">
+    <div>
+        <h1>{i18n.t('home.title')}</h1>
+        <p class="system-status">
+            {i18n.t('dashboard.system_infra')}: 
+            <span class="status-indicator status-{statusKey}">
+                {statusKey === 'ok' ? 'ONLINE' : 'OFFLINE'}
+            </span>
+        </p>
+    </div>
+</div>
 
 {#if userLoggedIn}
-    <section class="dashboard">
-        
-        <p>{i18n.t('home.user_list')}</p>
-        
-        {#if users.length === 0}
-            <p class="empty-msg">{i18n.t('home.loading_or_empty')}</p>
-        {:else}
-            <ul class="user-list">
-                {#each users as u}
-                    <li>
-                        <span class="user-name">{u.name}</span> 
-                        <span class="user-email">({u.email})</span>
-                    </li>
-                {/each}
-            </ul>
+    <div class="welcome-box card">
+        <p>👋 {i18n.t('home.welcome')}, <strong>{userLoggedIn.name}</strong>! {i18n.t('home.active_roles')} 
+            {#each userLoggedIn.roles || [] as role}
+                <span class="role-tag">{role}</span>
+            {/each}
+        </p>
+        <p class="sub-text">{i18n.t('home.select_department')}</p>
+    </div>
+
+    <div class="hub-grid">
+        <!-- Card 1: Area Driver -->
+        {#if hasDriverRole}
+            <a href="/driver" class="hub-card">
+                <div class="icon">🚚</div>
+                <h3>{i18n.t('dashboard.driver_panel_title')}</h3>
+                <p>{i18n.t('dashboard.driver_panel_desc_placeholder' || 'Accedi ai tuoi dati logistici')}</p>
+            </a>
         {/if}
-    </section>
+
+        <!-- Card 2: Area Admin/Dispatcher -->
+        {#if hasStaffRole}
+            <a href="/admin" class="hub-card">
+                <div class="icon">🏢</div>
+                <h3>{i18n.t('dashboard.fleet_panel_title')}</h3>
+                <p>{i18n.t('dashboard.fleet_panel_desc_placeholder' || 'Monitora flotta e operatori')}</p>
+            </a>
+        {/if}
+    </div>
 {:else}
-    <section class="guest-box">
+    <div class="card guest-box">
         <h2>{i18n.t('home.area_reserved')}</h2>
         <p>{i18n.t('home.guest_msg')}</p>
         <div class="auth-buttons">
-            <a href="/login" class="btn btn-login">{i18n.t('auth.login')}</a>
-            <a href="/signup" class="btn btn-signup">{i18n.t('auth.signup')}</a>
+            <a href="/login" class="btn btn-light">{i18n.t('dashboard.btn_guest_login')}</a>
+            <a href="/signup" class="btn btn-primary">{i18n.t('dashboard.btn_guest_signup')}</a>
         </div>
-    </section>
+    </div>
 {/if}
 
 <style>
-    section { margin: 2rem 0; font-family: sans-serif; }
+    .dashboard-header { margin-bottom: 1.5rem; padding: 1.5rem; }
+    .system-status { margin: 0.25rem 0 0 0; font-size: 0.875rem; color: #64748b; }
+    .status-indicator { font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; }
+    .status-ok { background: #d1fae5; color: #065f46; }
+    .status-offline { background: #fee2e2; color: #991b1b; }
 
-    .status-ok { color: green; }
-    .status-offline, .status-error { color: red; }
-    .status-checking { color: orange; }
+    .welcome-box { margin-bottom: 2rem; padding: 1.25rem; background: #f1f5f9; border: 1px solid var(--border); }
+    .welcome-box p { margin: 0.25rem 0; }
+    .sub-text { font-size: 0.875rem; color: #64748b; }
+    
+    .role-tag {
+        display: inline-block; background: var(--accent, #2563eb); color: white; padding: 0.15rem 0.5rem;
+        font-size: 0.75rem; font-weight: bold; border-radius: 4px; margin-left: 0.35rem; text-transform: uppercase;
+    }
 
-    .guest-box {
-        background: #f9f9f9;
-        padding: 2rem;
-        border-radius: 8px;
-        border: 1px dashed #ccc;
-        text-align: center;
+    .hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .hub-card { 
+        background: white; border: 1px solid var(--border); padding: 2rem; border-radius: 12px; 
+        text-decoration: none; color: inherit; transition: all 0.2s ease-in-out; display: block;
     }
-    .auth-buttons { margin-top: 1.5rem; }
-    .btn {
-        display: inline-block;
-        padding: 0.6rem 1.2rem;
-        margin: 0 0.5rem;
-        text-decoration: none;
-        font-weight: bold;
-        border-radius: 4px;
-    }
-    .btn-login { background: #eee; color: #333; border: 1px solid #ccc; }
-    .btn-signup { background: #0076ff; color: white; }
-    .btn-signup:hover { background: #005bc5; }
+    .hub-card:hover { transform: translateY(-3px); border-color: var(--accent, #2563eb); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+    .hub-card .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .hub-card h3 { margin: 0 0 0.5rem 0; font-size: 1.2rem; color: var(--text-dark); }
+    .hub-card p { margin: 0; font-size: 0.9rem; color: #64748b; line-height: 1.4; }
 
-    .user-list { list-style: none; padding: 0; }
-    .user-list li { 
-        padding: 0.6rem; 
-        background: #f1f5f9; 
-        margin-bottom: 0.5rem; 
-        border-radius: 4px; 
-        border-left: 4px solid #0076ff;
-    }
-    .user-name { font-weight: bold; color: #1e293b; }
-    .user-email { color: #64748b; margin-left: 0.5rem; }
-    .empty-msg { color: #666; font-style: italic; }
+    .guest-box { text-align: center; padding: 4rem 2rem; }
+    .auth-buttons { margin-top: 2rem; display: flex; justify-content: center; gap: 1rem; }
+    .btn-light { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; }
 </style>

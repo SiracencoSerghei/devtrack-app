@@ -23,7 +23,7 @@
             if (!response.ok) {
                 const errorData = await response.json();
                 if (response.status === 401 || errorData.error === 'Credenziali non valide') {
-                    errorKey = 'invalid_creds'; // Mappa l'errore sul dizionario
+                    errorKey = 'invalid_creds';
                 } else {
                     customError = errorData.error || response.statusText;
                 }
@@ -31,7 +31,7 @@
             }
 
             const data = await response.json();
-            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('token', data.token);
             localStorage.setItem('user_data', JSON.stringify(data.user));
             window.location.href = '/';
 

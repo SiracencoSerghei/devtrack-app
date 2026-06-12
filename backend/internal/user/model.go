@@ -1,17 +1,12 @@
 package user
 
-import "errors"
+import "time"
 
 type User struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"-"`
+	ID           string    `json:"id"`
+	Name         string    `json:"name"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"-"`
+	Roles        []string  `json:"roles"`
+	CreatedAt    time.Time `json:"created_at"`
 }
-
-type CreateUserRequest struct {
-    Name  string `json:"name"`
-    Email string `json:"email"`
-}
-
-var ErrUserNotFound = errors.New("user not found")
