@@ -19,14 +19,16 @@ var (
 var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
 
 type Service struct {
-	repo     Repository
-	roleRepo RoleRepository
+	repo         Repository
+	roleRepo     RoleRepository
+	tokenManager *auth.TokenManager
 }
 
-func NewService(repo Repository, roleRepo RoleRepository) *Service {
+func NewService(repo Repository, roleRepo RoleRepository, tm *auth.TokenManager) *Service {
 	return &Service{
-		repo:     repo,
-		roleRepo: roleRepo,
+		repo:         repo,
+		roleRepo:     roleRepo,
+		tokenManager: tm,
 	}
 }
 
@@ -81,7 +83,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, Us
 		return "", User{}, errors.New("credenziali non valide")
 	}
 
-	token, err := auth.GenerateToken(u.ID, u.Email, u.Roles)
+	token, err := s.tokenManager.GenerateToken(u.ID, u.Email, u.Roles)
 	if err != nil {
 		return "", User{}, fmt.Errorf("failed to generate token: %w", err)
 	}

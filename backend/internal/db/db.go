@@ -3,25 +3,12 @@ package db
 import (
 	"context"
 	"fmt"
-	"os"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func Connect(ctx context.Context) (*pgxpool.Pool, error) {
-	host := os.Getenv("DB_HOST")
-	if host == "" { host = "localhost" }
-	
-	user := os.Getenv("DB_USER")
-	if user == "" { user = "postgres" }
-	
-	password := os.Getenv("DB_PASSWORD")
-	if password == "" { password = "postgres" }
-	
-	dbname := os.Getenv("DB_NAME")
-	if dbname == "" { dbname = "devtrack_db" }
-
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable", user, password, host, dbname)
+// Передаємо конкретні параметри, ховаючи всю логіку зчитування у config
+func Connect(ctx context.Context, host, port, user, password, dbname string) (*pgxpool.Pool, error) {
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
 
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {

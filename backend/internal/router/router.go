@@ -7,10 +7,13 @@ import (
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/middleware"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/driver"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
 )
 
-func New(u *user.Handler, h *health.Handler, d *driver.Handler) http.Handler {
+func New(u *user.Handler, h *health.Handler, d *driver.Handler, tm *auth.TokenManager, corsOrigin string) http.Handler {
 	mux := http.NewServeMux()
+
+	authMiddleware := middleware.Auth(tm)
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -21,20 +24,17 @@ func New(u *user.Handler, h *health.Handler, d *driver.Handler) http.Handler {
 	mux.HandleFunc("POST /api/login", u.Login)
 	mux.HandleFunc("GET /health", h.HealthCheck)
 
-	// 🌟 Nuove rotte per la gestione dei Driver protette da Token JWT
-	mux.Handle("POST /api/drivers", middleware.Auth(http.HandlerFunc(d.CreateProfile)))
-	mux.Handle("GET /api/drivers", middleware.Auth(http.HandlerFunc(d.GetProfile)))
+	mux.Handle("POST /api/drivers", authMiddleware(http.HandlerFunc(d.CreateProfile)))
+	mux.Handle("GET /api/drivers", authMiddleware(http.HandlerFunc(d.GetProfile)))
 
-	mux.Handle("GET /api/users",
-		middleware.Auth(http.HandlerFunc(u.GetAll)),
-	)
+	mux.Handle("GET /api/users", authMiddleware(http.HandlerFunc(u.GetAll)))
 
-	return middleware.Logging(applyCORS(mux))
+	return middleware.Logging(applyCORS(mux, corsOrigin))
 }
 
-func applyCORS(next http.Handler) http.Handler {
+func applyCORS(next http.Handler, origin string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
