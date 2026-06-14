@@ -40,6 +40,9 @@ func (s *Service) SignUp(ctx context.Context, name, email, password string) (Use
 	if len(password) < 6 {
 		return User{}, ErrShortPwd
 	}
+	if !emailRegex.MatchString(email) {
+		return User{}, ErrInvalidEmail
+	}
 
 	totalUsers, err := s.repo.Count(ctx)
 	if err != nil {

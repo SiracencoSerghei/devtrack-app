@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -20,18 +20,20 @@ func (w *responseWriterInterceptor) WriteHeader(statusCode int) {
 func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
-		interceptor := &responseWriterInterceptor{ResponseWriter: w, statusCode: http.StatusOK}
-		
+
+		interceptor := &responseWriterInterceptor{
+			ResponseWriter: w,
+			statusCode:     http.StatusOK,
+		}
+
 		next.ServeHTTP(interceptor, r)
-		
-		log.Printf(
-			"[HTTP] %s %s | Status: %d | Duration: %v | IP: %s",
-			r.Method,
-			r.URL.Path,
-			interceptor.statusCode,
-			time.Since(start),
-			r.RemoteAddr,
+
+		slog.Info("http request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", interceptor.statusCode,
+			"duration", time.Since(start).String(),
+			"ip", r.RemoteAddr,
 		)
 	})
 }

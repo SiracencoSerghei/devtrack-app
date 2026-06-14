@@ -3,6 +3,8 @@ package driver
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/middleware"
 )
 
 type Handler struct {
@@ -14,7 +16,6 @@ func NewHandler(svc *Service) *Handler {
 }
 
 type createDriverReq struct {
-	UserID        string `json:"user_id"`
 	LicenseNumber string `json:"license_number"`
 	Phone         string `json:"phone"`
 }
@@ -30,16 +31,18 @@ func (h *Handler) CreateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d, err := h.svc.CreateProfile(r.Context(), req.UserID, req.LicenseNumber, req.Phone)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+	claims, ok := middleware.GetUser(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	d, err := h.svc.CreateProfile(r.Context(), claims.UserID, req.LicenseNumber, req.Phone)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	json.NewEncoder(w).Encode(d)
 }
 

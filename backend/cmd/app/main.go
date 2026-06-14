@@ -2,28 +2,50 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/bootstrap"
 )
 
 func main() {
-	log.Println("[START] Inizializzazione del server DevTrack...")
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	// Avvia il bootstrap dell'intera applicazione
 	app, err := bootstrap.Initialize(ctx)
 	if err != nil {
-		log.Fatalf("[FATAL] Errore durante l'inizializzazione: %v", err)
+		slog.Error("bootstrap failed", "err", err)
+		os.Exit(1)
 	}
 	defer app.Close()
 
-	log.Println("[READY] Server in ascolto sulla porta :8080 🚀")
-	if err := app.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("[FATAL] Errore durante l'esecuzione del server: %v", err)
+	go func() {
+		slog.Info("server started", "addr", app.Server.Addr)
+
+		err := app.Server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			slog.Error("server crashed", "err", err)
+			stop()
+		}
+	}()
+
+	<-ctx.Done()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	slog.Info("shutdown started")
+
+	if err := app.Server.Shutdown(shutdownCtx); err != nil {
+		slog.Error("shutdown error", "err", err)
 	}
+
+	slog.Info("shutdown complete")
 }
