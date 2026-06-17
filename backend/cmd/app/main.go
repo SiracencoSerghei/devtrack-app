@@ -19,18 +19,19 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	app, err := bootstrap.Initialize(ctx)
+	// Ініціалізуємо DI-контейнер
+	container, err := bootstrap.NewContainer(ctx)
 	if err != nil {
-		slog.Error("bootstrap failed", "err", err)
+		slog.Error("failed to build di container", "err", err)
 		os.Exit(1)
 	}
-	defer app.Close()
+	defer container.Close()
 
+	// Запускаємо сервер в окремій горутині
 	go func() {
-		slog.Info("server started", "addr", app.Server.Addr)
+		slog.Info("server started", "addr", container.Server.Addr)
 
-		err := app.Server.ListenAndServe()
-		if err != nil && err != http.ErrServerClosed {
+		if err := container.Server.Start(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server crashed", "err", err)
 			stop()
 		}
@@ -38,12 +39,13 @@ func main() {
 
 	<-ctx.Done()
 
+	// Етап Graceful Shutdown
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	slog.Info("shutdown started")
 
-	if err := app.Server.Shutdown(shutdownCtx); err != nil {
+	if err := container.Server.Stop(shutdownCtx); err != nil {
 		slog.Error("shutdown error", "err", err)
 	}
 

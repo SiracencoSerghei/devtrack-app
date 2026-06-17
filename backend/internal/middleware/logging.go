@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// responseWriterInterceptor ci serve per catturare lo status code (es. 200, 400, 500)
 type responseWriterInterceptor struct {
 	http.ResponseWriter
 	statusCode int
@@ -28,7 +27,11 @@ func Logging(next http.Handler) http.Handler {
 
 		next.ServeHTTP(interceptor, r)
 
-		slog.Info("http request",
+		// 🌟 ВИПРАВЛЕНО: Логування структуроване, з прив'язкою до Trace ID запиту
+		traceID := GetTraceID(r.Context())
+
+		slog.Info("http request processed",
+			"request_id", traceID,
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", interceptor.statusCode,
