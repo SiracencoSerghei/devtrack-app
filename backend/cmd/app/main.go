@@ -2,28 +2,52 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/bootstrap"
 )
 
 func main() {
-	log.Println("[START] Inizializzazione del server DevTrack...")
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// Ініціалізуємо DI-контейнер
+	container, err := bootstrap.NewContainer(ctx)
+	if err != nil {
+		slog.Error("failed to build di container", "err", err)
+		os.Exit(1)
+	}
+	defer container.Close()
+
+	// Запускаємо сервер в окремій горутині
+	go func() {
+		slog.Info("server started", "addr", container.Server.Addr)
+
+		if err := container.Server.Start(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server crashed", "err", err)
+			stop()
+		}
+	}()
+
+	<-ctx.Done()
+
+	// Етап Graceful Shutdown
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Avvia il bootstrap dell'intera applicazione
-	app, err := bootstrap.Initialize(ctx)
-	if err != nil {
-		log.Fatalf("[FATAL] Errore durante l'inizializzazione: %v", err)
-	}
-	defer app.Close()
+	slog.Info("shutdown started")
 
-	log.Println("[READY] Server in ascolto sulla porta :8080 🚀")
-	if err := app.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("[FATAL] Errore durante l'esecuzione del server: %v", err)
+	if err := container.Server.Stop(shutdownCtx); err != nil {
+		slog.Error("shutdown error", "err", err)
 	}
+
+	slog.Info("shutdown complete")
 }
