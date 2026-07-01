@@ -1,4 +1,4 @@
-package role
+package infrastructure
 
 import (
 	"context"

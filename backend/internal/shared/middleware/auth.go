@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/auth"
 )
 
 // Унікальний тип-структура для ключів контексту
@@ -34,14 +34,6 @@ func generateRequestID() string {
 func Auth(tm *auth.TokenManager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Вбудовуємо Request ID для трасування логів
-			reqID := r.Header.Get("X-Request-ID")
-			if reqID == "" {
-				reqID = generateRequestID()
-			}
-			w.Header().Set("X-Request-ID", reqID)
-			ctx := context.WithValue(r.Context(), traceKey, reqID)
-
 			header := r.Header.Get("Authorization")
 			if header == "" {
 				http.Error(w, "missing authorization header", http.StatusUnauthorized)
@@ -60,7 +52,7 @@ func Auth(tm *auth.TokenManager) func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx = context.WithValue(ctx, userKey, AuthClaims{
+			ctx := context.WithValue(r.Context(), userKey, AuthClaims{
 				UserID: claims.UserID,
 				Email:  claims.Email,
 				Roles:  claims.Roles,
@@ -72,13 +64,11 @@ func Auth(tm *auth.TokenManager) func(http.Handler) http.Handler {
 }
 
 func GetUser(ctx context.Context) (AuthClaims, bool) {
-	user, ok := ctx.Value(userKey).(AuthClaims)
-	return user, ok
-}
-
-func GetTraceID(ctx context.Context) string {
-	if id, ok := ctx.Value(traceKey).(string); ok {
-		return id
+	val := ctx.Value(userKey)
+	if val == nil {
+		return AuthClaims{}, false
 	}
-	return ""
+
+	claims, ok := val.(AuthClaims)
+	return claims, ok
 }

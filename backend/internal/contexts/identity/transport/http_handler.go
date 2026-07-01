@@ -1,10 +1,11 @@
-package user
+package transport
 
 import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/httpx"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/httpx"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/identity/application"
 )
 
 type signUpReq struct {
@@ -19,10 +20,10 @@ type loginReq struct {
 }
 
 type Handler struct {
-	svc ServiceInterface // Зав'язано на інтерфейс
+	svc application.ServiceInterface // Зав'язано на інтерфейс
 }
 
-func NewHandler(svc ServiceInterface) *Handler {
+func NewHandler(svc application.ServiceInterface) *Handler {
 	return &Handler{svc: svc}
 }
 

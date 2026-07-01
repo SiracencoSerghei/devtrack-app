@@ -2,34 +2,42 @@ package router
 
 import (
 	"net/http"
-
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/middleware"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/driver"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
+	identitytransport "github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/identity/transport"
+	logisticstransport "github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/transport"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/middleware"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/auth"
 )
 
-func New(u *user.Handler, h *health.Handler, d *driver.Handler, tm *auth.TokenManager, corsOrigin string) http.Handler {
+type Dependencies struct {
+	Identity   identitytransport.Handler
+	Logistics  logisticstransport.Handler
+	TokenMgr   *auth.TokenManager
+	CORS       string
+}
+
+func New(d Dependencies) http.Handler {
 	mux := http.NewServeMux()
 
-	authMiddleware := middleware.Auth(tm)
-
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+	// public
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"app":"DevTrack API","status":"running"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	mux.HandleFunc("POST /api/signup", u.SignUp)
-	mux.HandleFunc("POST /api/login", u.Login)
-	mux.HandleFunc("GET /health", h.HealthCheck)
+	// identity
+	mux.HandleFunc("POST /api/signup", d.Identity.SignUp)
+	mux.HandleFunc("POST /api/login", d.Identity.Login)
 
-	mux.Handle("POST /api/drivers", authMiddleware(http.HandlerFunc(d.CreateProfile)))
-	mux.Handle("GET /api/drivers", authMiddleware(http.HandlerFunc(d.GetProfile)))
+	// protected
+	authMw := middleware.Auth(d.TokenMgr)
+	mux.Handle("POST /api/drivers",
+		authMw(http.HandlerFunc(d.Logistics.CreateProfile)),
+	)
+	mux.Handle("GET /api/drivers",
+		authMw(http.HandlerFunc(d.Logistics.GetProfile)),
+	)
 
-	mux.Handle("GET /api/users", authMiddleware(http.HandlerFunc(u.GetAll)))
-
-	return middleware.Logging(applyCORS(mux, corsOrigin))
+	return middleware.Logging(applyCORS(mux, d.CORS))
 }
 
 func applyCORS(next http.Handler, origin string) http.Handler {
@@ -37,12 +45,10 @@ func applyCORS(next http.Handler, origin string) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-
 		next.ServeHTTP(w, r)
 	})
 }

@@ -1,11 +1,12 @@
-package driver
+package transport
 
 import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/httpx"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/middleware"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/httpx"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/middleware"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/application"
 )
 
 type createDriverReq struct {
@@ -14,10 +15,10 @@ type createDriverReq struct {
 }
 
 type Handler struct {
-	svc ServiceInterface
+	svc application.ServiceInterface
 }
 
-func NewHandler(svc ServiceInterface) *Handler {
+func NewHandler(svc application.ServiceInterface) *Handler {
 	return &Handler{svc: svc}
 }
 

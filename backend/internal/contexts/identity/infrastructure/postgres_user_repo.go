@@ -1,11 +1,14 @@
-package user
+package infrastructure
 
 import (
 	"context"
 	"errors"
 	"time"
 
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/auth"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/identity/domain"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/identity/application"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,13 +22,13 @@ func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
-func (r *PostgresRepository) Create(ctx context.Context, u User, password string) (User, error) {
+func (r *PostgresRepository) Create(ctx context.Context, u domain.User, password string) (domain.User, error) {
 	u.ID = uuid.NewString()
 	u.CreatedAt = time.Now()
 
 	hash, err := auth.HashPassword(password)
 	if err != nil {
-		return User{}, err
+		return domain.User{}, err
 	}
 	u.PasswordHash = hash
 
@@ -36,17 +39,17 @@ func (r *PostgresRepository) Create(ctx context.Context, u User, password string
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
-				return User{}, ErrEmailAlreadyExists
+				return domain.User{}, application.ErrEmailAlreadyExists
 			}
 		}
-		return User{}, err
+		return domain.User{}, err
 	}
 
 	return u, nil
 }
 
-func (r *PostgresRepository) GetByEmail(ctx context.Context, email string) (User, error) {
-	var u User
+func (r *PostgresRepository) GetByEmail(ctx context.Context, email string) (domain.User, error) {
+	var u domain.User
 	// Utilizziamo ARRAY_AGG per estrarre tutti i ruoli associati in una stringa/array nativo Postgres
 	query := `
 	SELECT u.id, u.name, u.email, u.password_hash, u.created_at, COALESCE(array_agg(r.name) FILTER (WHERE r.name IS NOT NULL), '{}')
@@ -60,12 +63,12 @@ func (r *PostgresRepository) GetByEmail(ctx context.Context, email string) (User
 		&u.ID, &u.Name, &u.Email, &u.PasswordHash, &u.CreatedAt, &u.Roles,
 	)
 	if err != nil {
-		return User{}, err
+		return domain.User{}, err
 	}
 	return u, nil
 }
 
-func (r *PostgresRepository) GetAll(ctx context.Context) ([]User, error) {
+func (r *PostgresRepository) GetAll(ctx context.Context) ([]domain.User, error) {
 	query := `
 	SELECT u.id, u.name, u.email, u.created_at, COALESCE(array_agg(r.name) FILTER (WHERE r.name IS NOT NULL), '{}')
 	FROM users u
@@ -80,9 +83,9 @@ func (r *PostgresRepository) GetAll(ctx context.Context) ([]User, error) {
 	}
 	defer rows.Close()
 
-	var users []User
+	var users []domain.User
 	for rows.Next() {
-		var u User
+		var u domain.User
 		err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.CreatedAt, &u.Roles)
 		if err != nil {
 			return nil, err

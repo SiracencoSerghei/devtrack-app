@@ -1,10 +1,14 @@
-package driver
+package infrastructure
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/application"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/domain"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,7 +20,7 @@ func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
-func (r *PostgresRepository) Create(ctx context.Context, d Driver) (Driver, error) {
+func (r *PostgresRepository) Create(ctx context.Context, d domain.Driver) (domain.Driver, error) {
 	d.ID = uuid.NewString()
 	d.UpdatedAt = time.Now()
 	if d.Status == "" {
@@ -29,14 +33,19 @@ func (r *PostgresRepository) Create(ctx context.Context, d Driver) (Driver, erro
 	`
 	_, err := r.db.Exec(ctx, query, d.ID, d.UserID, d.LicenseNumber, d.Phone, d.Status, d.UpdatedAt)
 	if err != nil {
-		return Driver{}, err
+		var pgErr *pgconn.PgError
+		// Перевірка на унікальність унікального індексу drivers_user_id_key
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return domain.Driver{}, application.ErrDriverAlreadyExists
+		}
+		return domain.Driver{}, err
 	}
 
 	return d, nil
 }
 
-func (r *PostgresRepository) GetByUserID(ctx context.Context, userID string) (Driver, error) {
-	var d Driver
+func (r *PostgresRepository) GetByUserID(ctx context.Context, userID string) (domain.Driver, error) {
+	var d domain.Driver
 	query := `
 	SELECT id, user_id, license_number, phone, status, updated_at
 	FROM drivers

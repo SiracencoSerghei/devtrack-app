@@ -1,8 +1,10 @@
-package driver
+package application
 
 import (
 	"context"
 	"strings"
+
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/domain"
 )
 
 // Робимо стійкі типізовані Енапи замість сирих рядків
@@ -23,32 +25,33 @@ func (e DomainError) Error() string { return e.Message }
 func (e DomainError) APIError() (int, string) { return e.Status, e.Message }
 
 var (
-	ErrLicenseRequired = DomainError{Status: 400, Message: "il numero di patente è obbligatorio"}
-	ErrDriverNotFound  = DomainError{Status: 404, Message: "profilo driver non trovato"}
-	ErrInvalidStatus   = DomainError{Status: 400, Message: "stato driver non valido"}
+	ErrLicenseRequired   = DomainError{Status: 400, Message: "il numero di patente è obbligatorio"}
+	ErrDriverNotFound    = DomainError{Status: 404, Message: "profilo driver non trovato"}
+	ErrInvalidStatus     = DomainError{Status: 400, Message: "stato driver non valido"}
+	ErrDriverAlreadyExists = DomainError{Status: 409, Message: "un profilo driver per questo utente esiste già"}
 )
 
 type ServiceInterface interface {
-	CreateProfile(ctx context.Context, userID, license, phone string) (Driver, error)
-	GetProfileByUserID(ctx context.Context, userID string) (Driver, error)
+	CreateProfile(ctx context.Context, userID, license, phone string) (domain.Driver, error)
+	GetProfileByUserID(ctx context.Context, userID string) (domain.Driver, error)
 	UpdateDriverStatus(ctx context.Context, id string, status string) error
 }
 
 type Service struct {
-	repo Repository
+	repo domain.Repository
 }
 
-func NewService(repo Repository) *Service {
+func NewService(repo domain.Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreateProfile(ctx context.Context, userID, license, phone string) (Driver, error) {
+func (s *Service) CreateProfile(ctx context.Context, userID, license, phone string) (domain.Driver, error) {
 	license = strings.TrimSpace(license)
 	if license == "" {
-		return Driver{}, ErrLicenseRequired
+		return domain.Driver{}, ErrLicenseRequired
 	}
 
-	d := Driver{
+	d := domain.Driver{
 		UserID:        userID,
 		LicenseNumber: license,
 		Phone:         strings.TrimSpace(phone),
@@ -58,10 +61,10 @@ func (s *Service) CreateProfile(ctx context.Context, userID, license, phone stri
 	return s.repo.Create(ctx, d)
 }
 
-func (s *Service) GetProfileByUserID(ctx context.Context, userID string) (Driver, error) {
+func (s *Service) GetProfileByUserID(ctx context.Context, userID string) (domain.Driver, error) {
 	d, err := s.repo.GetByUserID(ctx, userID)
 	if err != nil {
-		return Driver{}, ErrDriverNotFound
+		return domain.Driver{}, ErrDriverNotFound
 	}
 	return d, nil
 }
