@@ -1,12 +1,12 @@
-package transport
+package api
 
 import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/fleet/application"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/httpx"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/middleware"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/application"
 )
 
 type createDriverReq struct {

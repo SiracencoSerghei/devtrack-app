@@ -7,76 +7,54 @@ import (
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/domain"
 )
 
-// Робимо стійкі типізовані Енапи замість сирих рядків
-type Status string
-
-const (
-	StatusAvailable Status = "AVAILABLE"
-	StatusInTransit Status = "IN_TRANSIT"
-	StatusOffDuty   Status = "OFF_DUTY"
-)
-
 type DomainError struct {
 	Status  int
 	Message string
 }
 
-func (e DomainError) Error() string { return e.Message }
+func (e DomainError) Error() string   { return e.Message }
 func (e DomainError) APIError() (int, string) { return e.Status, e.Message }
 
 var (
-	ErrLicenseRequired   = DomainError{Status: 400, Message: "il numero di patente è obbligatorio"}
-	ErrDriverNotFound    = DomainError{Status: 404, Message: "profilo driver non trovato"}
-	ErrInvalidStatus     = DomainError{Status: 400, Message: "stato driver non valido"}
-	ErrDriverAlreadyExists = DomainError{Status: 409, Message: "un profilo driver per questo utente esiste già"}
+	ErrAddressesRequired = DomainError{Status: 400, Message: "pickup and delivery addresses are required"}
+	ErrOrderNotFound     = DomainError{Status: 404, Message: "order not found"}
 )
 
-type ServiceInterface interface {
-	CreateProfile(ctx context.Context, userID, license, phone string) (domain.Driver, error)
-	GetProfileByUserID(ctx context.Context, userID string) (domain.Driver, error)
-	UpdateDriverStatus(ctx context.Context, id string, status string) error
+type Repository interface {
+	Create(ctx context.Context, o domain.Order) (domain.Order, error)
+	GetByID(ctx context.Context, id string) (domain.Order, error)
 }
 
 type Service struct {
-	repo domain.Repository
+	repo Repository
 }
 
-func NewService(repo domain.Repository) *Service {
+func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreateProfile(ctx context.Context, userID, license, phone string) (domain.Driver, error) {
-	license = strings.TrimSpace(license)
-	if license == "" {
-		return domain.Driver{}, ErrLicenseRequired
+func (s *Service) CreateOrder(ctx context.Context, customerID, pickup, delivery string) (domain.Order, error) {
+	pickup = strings.TrimSpace(pickup)
+	delivery = strings.TrimSpace(delivery)
+
+	if pickup == "" || delivery == "" {
+		return domain.Order{}, ErrAddressesRequired
 	}
 
-	d := domain.Driver{
-		UserID:        userID,
-		LicenseNumber: license,
-		Phone:         strings.TrimSpace(phone),
-		Status:        string(StatusAvailable),
+	o := domain.Order{
+		CustomerID:      customerID,
+		PickupAddress:   pickup,
+		DeliveryAddress: delivery,
+		Status:          "PENDING",
 	}
 
-	return s.repo.Create(ctx, d)
+	return s.repo.Create(ctx, o)
 }
 
-func (s *Service) GetProfileByUserID(ctx context.Context, userID string) (domain.Driver, error) {
-	d, err := s.repo.GetByUserID(ctx, userID)
+func (s *Service) GetOrder(ctx context.Context, id string) (domain.Order, error) {
+	o, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		return domain.Driver{}, ErrDriverNotFound
+		return domain.Order{}, ErrOrderNotFound
 	}
-	return d, nil
-}
-
-func (s *Service) UpdateDriverStatus(ctx context.Context, id string, status string) error {
-	typedStatus := Status(strings.ToUpper(strings.TrimSpace(status)))
-
-	// Елегантна та безпечна перевірка енапу
-	switch typedStatus {
-	case StatusAvailable, StatusInTransit, StatusOffDuty:
-		return s.repo.UpdateStatus(ctx, id, string(typedStatus))
-	default:
-		return ErrInvalidStatus
-	}
+	return o, nil
 }

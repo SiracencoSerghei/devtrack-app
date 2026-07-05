@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/application"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/domain"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/fleet/application"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/fleet/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
