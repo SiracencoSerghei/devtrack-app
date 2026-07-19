@@ -7,6 +7,6 @@ type Driver struct {
 	UserID        string    `json:"user_id"`
 	LicenseNumber string    `json:"license_number"`
 	Phone         string    `json:"phone"`
-	Status        string    `json:"status"` // AVAILABLE, IN_TRANSIT, OFF_DUTY
+	Status        DriverStatus `json:"status"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }

@@ -2,8 +2,6 @@ package middleware
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"log/slog"
 	"net/http"
 	"time"
@@ -15,44 +13,58 @@ type responseWriterInterceptor struct {
 }
 
 func (w *responseWriterInterceptor) WriteHeader(statusCode int) {
+	if w.statusCode != 0 {
+		return
+	}
+
 	w.statusCode = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-func generateGlobalRequestID() string {
-	bytes := make([]byte, 16)
-	_, _ = rand.Read(bytes)
-	return hex.EncodeToString(bytes)
+func (w *responseWriterInterceptor) Write(data []byte) (int, error) {
+	if w.statusCode == 0 {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	return w.ResponseWriter.Write(data)
 }
 
 func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 		start := time.Now()
 
-		// Гарантуємо наявність Request ID на самому вході в систему
 		reqID := r.Header.Get("X-Request-ID")
 		if reqID == "" {
-			reqID = generateGlobalRequestID()
+			reqID = generateRequestID()
 		}
+
 		w.Header().Set("X-Request-ID", reqID)
 
-		// Насичуємо контекст trace-ключем БЕЗПЕЧНО для використання у всіх наступних шарах
-		ctx := context.WithValue(r.Context(), traceKey, reqID)
+		ctx := context.WithValue(
+			r.Context(),
+			traceKey,
+			reqID,
+		)
 
 		interceptor := &responseWriterInterceptor{
 			ResponseWriter: w,
-			statusCode:     http.StatusOK,
 		}
 
-		// Передаємо оновлений контекст далі по ланцюжку
 		next.ServeHTTP(interceptor, r.WithContext(ctx))
 
-		slog.Info("http request processed",
+		status := interceptor.statusCode
+		if status == 0 {
+			status = http.StatusOK
+		}
+
+		slog.Info(
+			"http request processed",
 			"request_id", reqID,
 			"method", r.Method,
 			"path", r.URL.Path,
-			"status", interceptor.statusCode,
-			"duration", time.Since(start).String(),
+			"status", status,
+			"duration", time.Since(start),
 			"ip", r.RemoteAddr,
 		)
 	})

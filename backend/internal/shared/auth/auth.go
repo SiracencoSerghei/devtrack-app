@@ -1,10 +1,13 @@
 package auth
 
 import (
+	"errors"
 	"time"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/golang-jwt/jwt/v5"
 )
+
+const PasswordCost = 12
 
 type TokenManager struct {
 	jwtKey []byte
@@ -22,7 +25,7 @@ type Claims struct {
 }
 
 func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), PasswordCost)
 	return string(bytes), err
 }
 
@@ -32,13 +35,16 @@ func CheckPasswordHash(password, hash string) bool {
 }
 
 func (tm *TokenManager) GenerateToken(userID, email string, roles []string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour)
+	now := time.Now()
 	claims := &Claims{
 		UserID: userID,
 		Email:  email,
 		Roles:  roles,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			ExpiresAt: jwt.NewNumericDate(now.Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    "devtrack-erp",
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -47,6 +53,10 @@ func (tm *TokenManager) GenerateToken(userID, email string, roles []string) (str
 
 func (tm *TokenManager) ValidateToken(tokenStr string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// ГАРАНТІЯ БЕЗПЕКИ: Перевіряємо метод підпису явно!
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
 		return tm.jwtKey, nil
 	})
 	if err != nil {

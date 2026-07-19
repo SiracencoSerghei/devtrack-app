@@ -45,13 +45,13 @@ func (h *Handler) CreateProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
-	userID := r.URL.Query().Get("user_id")
-	if userID == "" {
-		httpx.WriteJSON(w, http.StatusBadRequest, httpx.ErrorResponse{Error: "Missing user_id parameter"})
+	claims, ok := middleware.GetUser(r.Context())
+	if !ok {
+		httpx.WriteJSON(w, http.StatusUnauthorized, httpx.ErrorResponse{Error: "Unauthorized"})
 		return
 	}
 
-	d, err := h.svc.GetProfileByUserID(r.Context(), userID)
+	d, err := h.svc.GetProfileByUserID(r.Context(), claims.UserID)
 	if err != nil {
 		httpx.WriteError(w, err)
 		return

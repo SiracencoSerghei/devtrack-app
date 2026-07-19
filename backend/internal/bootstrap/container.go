@@ -8,6 +8,7 @@ import (
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/router"
 	"github.com/SiracencoSerghei/devtrack-app/backend/pkg/httpserver"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/auth"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/middleware"
 )
 
 type Container struct {
@@ -40,13 +41,17 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	coreMod     := initCoreModule(pool)
 	logisticsMod := initLogisticsModule(pool)
 
-	r := router.New(router.Dependencies{
+r := router.New(router.Dependencies{
+		Config: router.Config{
+			CORS: middleware.CORSConfig{
+				AllowedOrigin: cfg.CORSOrigin,
+			},
+		},
 		Identity:  *identityMod.Handler,
 		Fleet:     *fleetMod.Handler,
 		Core:      *coreMod.Handler,
 		Logistics: *logisticsMod.Handler,
 		TokenMgr:  tokenManager,
-		CORS:      cfg.CORSOrigin,
 	})
 
 	server := httpserver.New(":"+cfg.Port, r)

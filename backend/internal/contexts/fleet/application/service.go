@@ -7,15 +7,6 @@ import (
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/fleet/domain"
 )
 
-// Робимо стійкі типізовані Енапи замість сирих рядків
-type Status string
-
-const (
-	StatusAvailable Status = "AVAILABLE"
-	StatusInTransit Status = "IN_TRANSIT"
-	StatusOffDuty   Status = "OFF_DUTY"
-)
-
 type DomainError struct {
 	Status  int
 	Message string
@@ -55,7 +46,7 @@ func (s *Service) CreateProfile(ctx context.Context, userID, license, phone stri
 		UserID:        userID,
 		LicenseNumber: license,
 		Phone:         strings.TrimSpace(phone),
-		Status:        string(StatusAvailable),
+		Status:        domain.StatusAvailable,
 	}
 
 	return s.repo.Create(ctx, d)
@@ -70,11 +61,10 @@ func (s *Service) GetProfileByUserID(ctx context.Context, userID string) (domain
 }
 
 func (s *Service) UpdateDriverStatus(ctx context.Context, id string, status string) error {
-	typedStatus := Status(strings.ToUpper(strings.TrimSpace(status)))
+	typedStatus := domain.DriverStatus(strings.ToUpper(strings.TrimSpace(status)))
 
-	// Елегантна та безпечна перевірка енапу
 	switch typedStatus {
-	case StatusAvailable, StatusInTransit, StatusOffDuty:
+	case domain.StatusAvailable, domain.StatusInTransit, domain.StatusOffDuty:
 		return s.repo.UpdateStatus(ctx, id, string(typedStatus))
 	default:
 		return ErrInvalidStatus

@@ -2,9 +2,18 @@ package application
 
 import (
 	"context"
-	"errors"
 	"github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/core/domain"
 )
+
+type DomainError struct {
+	Status  int
+	Message string
+}
+
+func (e DomainError) Error() string   { return e.Message }
+func (e DomainError) APIError() (int, string) { return e.Status, e.Message }
+
+var ErrNameRequired = DomainError{Status: 400, Message: "first and last name are required"}
 
 type Repository interface {
 	CreateEmployee(ctx context.Context, emp domain.Employee) (domain.Employee, error)
@@ -21,7 +30,7 @@ func NewService(repo Repository) *Service {
 
 func (s *Service) RegisterEmployee(ctx context.Context, emp domain.Employee) (domain.Employee, error) {
 	if emp.FirstName == "" || emp.LastName == "" {
-		return domain.Employee{}, errors.New("first and last name are required")
+		return domain.Employee{}, ErrNameRequired // Передає чистий 400 Bad Request
 	}
 	return s.repo.CreateEmployee(ctx, emp)
 }
