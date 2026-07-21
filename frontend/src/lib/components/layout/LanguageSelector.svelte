@@ -3,7 +3,7 @@
 
 	let isOpen = $state(false);
 
-	function setLang(lang: 'it' | 'uk' | 'en') {
+	function setLang(lang: 'it' | 'uk' | 'en'| 'de') {
 		i18n.setLang(lang);
 		isOpen = false;
 	}
@@ -19,6 +19,7 @@
 			<button class={i18n.lang === 'it' ? 'active' : ''} onclick={() => setLang('it')} type="button">IT</button>
 			<button class={i18n.lang === 'uk' ? 'active' : ''} onclick={() => setLang('uk')} type="button">UA</button>
 			<button class={i18n.lang === 'en' ? 'active' : ''} onclick={() => setLang('en')} type="button">EN</button>
+			<button class={i18n.lang === 'de' ? 'active' : ''} onclick={() => setLang('de')} type="button">DE</button>
 		</div>
 	{/if}
 </div>

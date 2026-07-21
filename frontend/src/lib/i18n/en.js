@@ -1,5 +1,5 @@
 export default {
-	nav: { home: 'Home', about: 'About', health: 'Health' },
+	nav: { home: 'Home', orders: 'Logistics', about: 'About', health: 'Health' },
 	home: {
 		title: 'Welcome to DevTrack',
 		welcome: 'Welcome',
@@ -98,5 +98,36 @@ export default {
 			'Access your trip data, logistics sheets, and manage your driving license.',
 		fleet_panel_desc_placeholder:
 			'View company staff, monitor active operators, and manage authorizations.'
+	},
+	orders: {
+		title_page: '📦 Order Management',
+		btn_open_search: '🔍 Search Order',
+		title_create: '📦 Create New Order',
+		title_list: '📋 Orders List',
+		title_edit: '✏️ Edit Order',
+		pickup_label: 'Pickup Address',
+		pickup_placeholder: 'e.g., 123 Main St, New York',
+		delivery_label: 'Delivery Address',
+		delivery_placeholder: 'e.g., 456 Market St, Boston',
+		btn_create: 'Create Order',
+		btn_creating: 'Creating...',
+		btn_edit: 'Edit',
+		btn_save: 'Save Changes',
+		btn_saving: 'Saving...',
+		btn_cancel: 'Cancel',
+		search_input_label: 'Order Number or Document Symbol',
+		search_placeholder: 'e.g. ORD-1001 or code...',
+		btn_search: 'Search',
+		btn_searching: 'Searching...',
+		not_found: 'Order not found',
+		empty_list: 'No orders found. Create your first order above!',
+		loading_orders: 'Loading orders...',
+		found_result: 'Found Result:',
+		action_col: 'Action',
+		order_num_col: 'Order No.',
+		status: 'Status',
+		from: 'From',
+		to: 'To',
+		created_at: 'Created'
 	}
 };

@@ -1,9 +1,9 @@
 import { client } from './client';
 import { ENDPOINTS } from '../constants/api';
-import type { AuthResponse, User } from '../types/api';
+import type { AuthResponse, User, SignUpRequest, LoginRequest } from '../types/api';
 
 export const authAPI = {
-	signup: (data: any) => client.post<User>(ENDPOINTS.AUTH.SIGNUP, data),
-	login: (data: any) => client.post<AuthResponse>(ENDPOINTS.AUTH.LOGIN, data),
+	signup: (data: SignUpRequest) => client.post<User>(ENDPOINTS.AUTH.SIGNUP, data),
+	login: (data: LoginRequest) => client.post<AuthResponse>(ENDPOINTS.AUTH.LOGIN, data),
 	getAll: () => client.get<User[]>(ENDPOINTS.AUTH.GET_ALL)
 };

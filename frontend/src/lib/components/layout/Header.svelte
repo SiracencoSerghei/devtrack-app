@@ -10,6 +10,7 @@
 
 		<nav class="nav-links">
 			<a href="/">{i18n.t('nav.home')}</a>
+			<a href="/orders">{i18n.t('nav.orders')}</a>
 			<a href="/about">{i18n.t('nav.about')}</a>
 			<a href="/health">{i18n.t('nav.health')}</a>
 		</nav>

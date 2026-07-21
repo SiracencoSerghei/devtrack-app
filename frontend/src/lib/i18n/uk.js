@@ -1,5 +1,5 @@
 export default {
-	nav: { home: 'Головна', about: 'Про нас', health: 'Статус' },
+	nav: { home: 'Головна', orders: 'Логістика', about: 'Про нас', health: 'Статус' },
 	home: {
 		title: 'Ласкаво просимо до DevTrack',
 		welcome: 'Ласкаво просимо',
@@ -100,5 +100,36 @@ export default {
 			'Отримуйте доступ до даних про поїздки, логістичних таблиць та керуйте своїм посвідченням водія.',
 		fleet_panel_desc_placeholder:
 			'Переглядайте персонал компанії, контролюйте активних операторів та керуйте правами доступу.'
+	},
+	orders: {
+		title_page: '📦 Управління замовленнями',
+		btn_open_search: '🔍 Пошук замовлення',
+		title_create: '📦 Створити нове замовлення',
+		title_list: '📋 Список замовлень',
+		title_edit: '✏️ Редагувати замовлення',
+		pickup_label: 'Адреса забору (Pickup)',
+		pickup_placeholder: 'напр. м. Київ, вул. Хрещатик 1',
+		delivery_label: 'Адреса доставки (Delivery)',
+		delivery_placeholder: 'напр. м. Львів, вул. Городоцька 10',
+		btn_create: 'Створити',
+		btn_creating: 'Створення...',
+		btn_edit: 'Редагувати',
+		btn_save: 'Зберегти зміни',
+		btn_saving: 'Збереження...',
+		btn_cancel: 'Скасувати',
+		search_input_label: 'Номер замовлення або символ із документа',
+		search_placeholder: 'напр. ORD-1001 або код...',
+		btn_search: 'Шукати',
+		btn_searching: 'Пошук...',
+		not_found: 'Замовлення не знайдено',
+		empty_list: 'Замовлень не знайдено. Створіть перше замовлення вище!',
+		loading_orders: 'Завантаження замовлень...',
+		found_result: 'Знайдений результат:',
+		action_col: 'Дія',
+		order_num_col: '№ Замовлення',
+		status: 'Статус',
+		from: 'Звідки',
+		to: 'Куди',
+		created_at: 'Створено'
 	}
 };
