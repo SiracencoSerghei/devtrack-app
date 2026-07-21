@@ -23,6 +23,7 @@ var (
 type Repository interface {
 	Create(ctx context.Context, o domain.Order) (domain.Order, error)
 	GetByID(ctx context.Context, id string) (domain.Order, error)
+	Search(ctx context.Context, queryStr string) ([]domain.Order, error)
 }
 
 type Service struct {
@@ -57,4 +58,12 @@ func (s *Service) GetOrder(ctx context.Context, id string) (domain.Order, error)
 		return domain.Order{}, ErrOrderNotFound
 	}
 	return o, nil
+}
+
+func (s *Service) SearchOrders(ctx context.Context, query string) ([]domain.Order, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return nil, ErrAddressesRequired
+	}
+	return s.repo.Search(ctx, query)
 }

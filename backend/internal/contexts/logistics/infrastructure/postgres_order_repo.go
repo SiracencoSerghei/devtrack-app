@@ -48,3 +48,33 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id string) (domain.Ord
 	)
 	return o, err
 }
+
+func (r *PostgresRepository) Search(ctx context.Context, queryStr string) ([]domain.Order, error) {
+	// Пошук за будь-яким збігом у pickup_address, delivery_address, status або ID
+	query := `
+	SELECT id, customer_id, pickup_address, delivery_address, status, created_at
+	FROM orders
+	WHERE pickup_address ILIKE $1 
+	   OR delivery_address ILIKE $1 
+	   OR status ILIKE $1 
+	   OR id::text ILIKE $1
+	ORDER BY created_at DESC
+	`
+	searchTerm := "%" + queryStr + "%"
+	rows, err := r.db.Query(ctx, query, searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []domain.Order
+	for rows.Next() {
+		var o domain.Order
+		if err := rows.Scan(&o.ID, &o.CustomerID, &o.PickupAddress, &o.DeliveryAddress, &o.Status, &o.CreatedAt); err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+
+	return orders, nil
+}

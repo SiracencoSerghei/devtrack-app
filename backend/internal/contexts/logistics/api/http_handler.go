@@ -46,17 +46,22 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		httpx.WriteJSON(w, http.StatusBadRequest, httpx.ErrorResponse{Error: "Missing id parameter"})
+
+	queryParam := r.URL.Query().Get("query")
+	if queryParam == "" {
+		queryParam = r.URL.Query().Get("id")
+	}
+
+	if queryParam == "" {
+		httpx.WriteJSON(w, http.StatusBadRequest, httpx.ErrorResponse{Error: "Missing search parameter"})
 		return
 	}
 
-	o, err := h.svc.GetOrder(r.Context(), id)
+	orders, err := h.svc.SearchOrders(r.Context(), queryParam)
 	if err != nil {
 		httpx.WriteError(w, err)
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, o)
+	httpx.WriteJSON(w, http.StatusOK, orders)
 }
