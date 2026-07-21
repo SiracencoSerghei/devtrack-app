@@ -1,33 +1,35 @@
-<script>
-    import { i18n } from '$lib/i18n/i18n.svelte.js';
+<script lang="ts">
+	import { systemAPI } from '$lib/api/system';
+	import { i18n } from '$lib/i18n/i18n.svelte.js';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
 
-    let statusKey = $state('loading');
-    let message = $state('');
+	let statusKey = $state<'loading' | 'ok' | 'offline'>('loading');
 
-    $effect(() => {
-        async function fetchHealth() {
-            try {
-                const res = await fetch('http://localhost:8080/health');
-                const json = await res.json();
-                
-                if (json.status === 'OK') {
-                    statusKey = 'ok';
-                } else {
-                    statusKey = 'offline';
-                }
-            } catch (e) {
-                statusKey = 'offline';
-                message = e.message;
-            }
-        }
-        fetchHealth();
-    });
+	async function fetchHealth() {
+		try {
+			const res = await systemAPI.checkHealth();
+			if (res && res.status === 'ok') {
+				statusKey = 'ok';
+			} else {
+				statusKey = 'offline';
+			}
+		} catch (e) {
+			statusKey = 'offline';
+		}
+	}
+
+	$effect(() => {
+		fetchHealth();
+	});
 </script>
 
-<h1>{i18n.t('health.title')}</h1>
-
-<p>{i18n.t('health.status')} <strong>{i18n.t(`health.${statusKey}`)}</strong></p>
-
-{#if message}
-    <p>{i18n.t('health.error_detail')} {message}</p>
-{/if}
+<Card>
+	<h1>{i18n.t('health.title') || 'System Status'}</h1>
+	<p>
+		{i18n.t('health.status') || 'Status:'} 
+		<Badge type={statusKey === 'ok' ? 'success' : statusKey === 'loading' ? 'default' : 'danger'}>
+			{statusKey.toUpperCase()}
+		</Badge>
+	</p>
+</Card>

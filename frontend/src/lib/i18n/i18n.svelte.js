@@ -1,8 +1,9 @@
 import it from './it.js';
 import uk from './uk.js';
 import en from './en.js';
+import de from './de.js';
 
-const dictionaries = { it, uk, en };
+const dictionaries = { it, uk, en, de };
 
 class I18nManager {
 	

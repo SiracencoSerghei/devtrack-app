@@ -1,5 +1,5 @@
 export default {
-	nav: { home: 'Home', about: 'Chi Siamo', health: 'Stato' },
+	nav: { home: 'Home', about: 'Chi Siamo', health: 'Stato', orders: 'Logistica' },
 	home: {
 		title: 'Benvenuto su DevTrack',
 		welcome: 'Benvenuto',
@@ -101,4 +101,35 @@ export default {
 		fleet_panel_desc_placeholder:
 			'Visualizza lo staff aziendale, monitora gli operatori attivi e gestisci le autorizzazioni.'
 	},
+	orders: {
+		title_page: '📦 Gestione Ordini',
+		btn_open_search: '🔍 Cerca Ordine',
+		title_create: '📦 Crea nuovo ordine',
+		title_list: '📋 Lista degli Ordini',
+		title_edit: '✏️ Modifica Ordine',
+		pickup_label: 'Indirizzo di ritiro (Pickup)',
+		pickup_placeholder: 'Es. Via Roma 1, Milano',
+		delivery_label: 'Indirizzo di consegna (Delivery)',
+		delivery_placeholder: 'Es. Corso Italia 10, Torino',
+		btn_create: 'Crea ordine',
+		btn_creating: 'Creazione...',
+		btn_edit: 'Modifica',
+		btn_save: 'Salva Modifiche',
+		btn_saving: 'Salvataggio...',
+		btn_cancel: 'Annulla',
+		search_input_label: 'Numero Ordine o Simbolo del Documento',
+		search_placeholder: 'Es. ORD-1001 oppure codice...',
+		btn_search: 'Cerca',
+		btn_searching: 'Ricerca...',
+		not_found: 'Ordine non trovato',
+		empty_list: 'Nessun ordine trovato. Crea il tuo primo ordine sopra!',
+		loading_orders: 'Caricamento ordini in corso...',
+		found_result: 'Risultato Trovato:',
+		action_col: 'Azione',
+		order_num_col: 'N. Ordine',
+		status: 'Stato',
+		from: 'Da',
+		to: 'A',
+		created_at: 'Creato il'
+	}
 };

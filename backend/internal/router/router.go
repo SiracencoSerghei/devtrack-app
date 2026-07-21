@@ -2,47 +2,40 @@ package router
 
 import (
 	"net/http"
-
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/health"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/middleware"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/user"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/driver"
-	"github.com/SiracencoSerghei/devtrack-app/backend/internal/auth"
+	identityapi "github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/identity/api"
+	fleetapi "github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/fleet/api"
+	coreapi "github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/core/api"
+	logisticsapi "github.com/SiracencoSerghei/devtrack-app/backend/internal/contexts/logistics/api"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/middleware"
+	"github.com/SiracencoSerghei/devtrack-app/backend/internal/shared/auth"
 )
 
-func New(u *user.Handler, h *health.Handler, d *driver.Handler, tm *auth.TokenManager, corsOrigin string) http.Handler {
-	mux := http.NewServeMux()
-
-	authMiddleware := middleware.Auth(tm)
-
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"app":"DevTrack API","status":"running"}`))
-	})
-
-	mux.HandleFunc("POST /api/signup", u.SignUp)
-	mux.HandleFunc("POST /api/login", u.Login)
-	mux.HandleFunc("GET /health", h.HealthCheck)
-
-	mux.Handle("POST /api/drivers", authMiddleware(http.HandlerFunc(d.CreateProfile)))
-	mux.Handle("GET /api/drivers", authMiddleware(http.HandlerFunc(d.GetProfile)))
-
-	mux.Handle("GET /api/users", authMiddleware(http.HandlerFunc(u.GetAll)))
-
-	return middleware.Logging(applyCORS(mux, corsOrigin))
+type Config struct {
+	CORS middleware.CORSConfig
 }
 
-func applyCORS(next http.Handler, origin string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+type Dependencies struct {
+	Config    Config
+	Identity  identityapi.Handler
+	Fleet     fleetapi.Handler
+	Core      coreapi.Handler
+	Logistics logisticsapi.Handler
+	TokenMgr  *auth.TokenManager
+}
 
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
+func New(d Dependencies) http.Handler {
+	mux := http.NewServeMux()
+	authMw := middleware.Auth(d.TokenMgr)
 
-		next.ServeHTTP(w, r)
-	})
+	// Декларативна реєстрація ізольованих модулів маршрутизації
+	registerSystemRoutes(mux)
+	registerIdentityRoutes(mux, d.Identity)
+	registerCoreRoutes(mux, authMw, d.Core)
+	registerFleetRoutes(mux, authMw, d.Fleet)
+	registerLogisticsRoutes(mux, authMw, d.Logistics)
+
+	// Чистий ланцюжок middleware
+	corsMw := middleware.CORS(d.Config.CORS)
+	
+	return middleware.Logging(corsMw(mux))
 }

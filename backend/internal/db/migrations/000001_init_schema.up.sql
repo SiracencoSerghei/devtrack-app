@@ -39,3 +39,45 @@ CREATE TABLE IF NOT EXISTS drivers (
     status VARCHAR(20) DEFAULT 'AVAILABLE',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    pickup_address TEXT NOT NULL,
+    delivery_address TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+-- LAYER 1: CORE ERP (Організаційна структура)
+CREATE TABLE IF NOT EXISTS companies (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS departments (
+    id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS employees (
+    id TEXT PRIMARY KEY,
+    user_id TEXT UNIQUE NOT NULL, -- Зв'язок з Identity (технічним акаунтом)
+    department_id TEXT REFERENCES departments(id) ON DELETE SET NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    phone TEXT,
+    role_in_company TEXT NOT NULL, -- DISPATCHER, DRIVER, MANAGER, ACCOUNTANT
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- LAYER 2: LOGISTICS (Бізнес-процеси)
+CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL, -- На майбутнє (Billing/Customers)
+    pickup_address TEXT NOT NULL,
+    delivery_address TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
